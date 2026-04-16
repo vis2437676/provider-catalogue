@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lab Catalogue · Reconciliation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    *,*::before,*::after{box-sizing:border-box}
+
+    body{
+      margin:0;
+      background:#f0f4ff;
+      color:#1e293b;
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    }
+
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:#f1f5f9}
+    ::-webkit-scrollbar-thumb{background:#c7d2fe;border-radius:10px}
+
+    /* ── Animations ── */
+    @keyframes fadeIn    {from{opacity:0}to{opacity:1}}
+    @keyframes slideUp   {from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes spin      {to{transform:rotate(360deg)}}
+    @keyframes toastIn   {from{opacity:0;transform:translateX(110%)}to{opacity:1;transform:translateX(0)}}
+    @keyframes pulse     {0%{box-shadow:0 0 0 0 rgba(99,102,241,.4)}70%{box-shadow:0 0 0 10px rgba(99,102,241,0)}100%{box-shadow:0 0 0 0 rgba(99,102,241,0)}}
+    @keyframes float     {0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes shimmer   {0%{background-position:-400px 0}100%{background-position:400px 0}}
+    @keyframes barFlow   {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    @keyframes orbFloat  {0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,15px) scale(.97)}}
+    @keyframes orbFloat2 {0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-25px,20px) scale(1.03)}66%{transform:translate(20px,-15px) scale(.98)}}
+    @keyframes countUp   {from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes checkPop  {0%{transform:scale(0) rotate(-45deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+
+    .anim-fade    {animation:fadeIn    .35s ease forwards}
+    .anim-slide   {animation:slideUp   .5s  cubic-bezier(.16,1,.3,1) forwards}
+    .anim-right   {animation:slideRight .45s cubic-bezier(.16,1,.3,1) forwards}
+    .anim-spin    {animation:spin 1s linear infinite}
+    .anim-toast   {animation:toastIn .4s cubic-bezier(.16,1,.3,1) forwards}
+    .anim-pulse   {animation:pulse 2s infinite}
+    .anim-float   {animation:float 3s ease-in-out infinite}
+    .anim-count   {animation:countUp .4s ease forwards}
+    .anim-check   {animation:checkPop .4s cubic-bezier(.16,1,.3,1) forwards}
+
+    .progress-bar{transition:width .65s cubic-bezier(.4,0,.2,1)}
+    .progress-live{
+      background:linear-gradient(90deg,#6366f1,#a855f7,#ec4899,#a855f7,#6366f1);
+      background-size:300% 100%;
+      animation:barFlow 2.5s ease infinite;
+    }
+
+    /* Glassmorphism card */
+    .glass{
+      background:rgba(255,255,255,.85);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border:1px solid rgba(255,255,255,.9);
+      box-shadow:0 4px 24px rgba(99,102,241,.08), 0 1px 3px rgba(0,0,0,.04);
+      border-radius:20px;
+    }
+    .glass-sm{
+      background:rgba(255,255,255,.8);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      border:1px solid rgba(255,255,255,.9);
+      box-shadow:0 2px 12px rgba(99,102,241,.06);
+      border-radius:14px;
+    }
+    .glass-dark{
+      background:rgba(255,255,255,.75);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border:1px solid rgba(255,255,255,.8);
+      box-shadow:0 8px 32px rgba(99,102,241,.12), 0 2px 8px rgba(0,0,0,.06);
+      border-radius:24px;
+    }
+
+    /* Gradient backgrounds */
+    .grad-page{
+      background:linear-gradient(135deg,#eef2ff 0%,#f5f3ff 35%,#fdf4ff 65%,#fce7f3 100%);
+      min-height:100vh;
+    }
+    .grad-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6,#a855f7)}
+    .grad-success{background:linear-gradient(135deg,#10b981,#059669)}
+    .grad-warning{background:linear-gradient(135deg,#f59e0b,#d97706)}
+    .grad-danger {background:linear-gradient(135deg,#ef4444,#dc2626)}
+
+    /* Orbs */
+    .orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;z-index:0}
+
+    /* Buttons */
+    .btn{transition:all .2s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;overflow:hidden}
+    .btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .2s}
+    .btn:hover:not(:disabled)::after{background:rgba(255,255,255,.12)}
+    .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 20px rgba(99,102,241,.25)}
+    .btn:active:not(:disabled){transform:translateY(0);box-shadow:none}
+    .btn:disabled{cursor:not-allowed;opacity:.5}
+
+    /* Table rows */
+    .trow{transition:background .12s ease}
+    .trow:hover{background:rgba(99,102,241,.03)}
+
+    /* Input fields */
+    .ifield{transition:border-color .15s,box-shadow .15s,background .15s}
+    .ifield:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12);background:#fff}
+
+    /* Drop zone */
+    .drop-zone{transition:all .25s cubic-bezier(.4,0,.2,1)}
+    .drop-zone:hover:not(.locked){transform:translateY(-3px);box-shadow:0 12px 32px rgba(99,102,241,.15)}
+    .drop-active{
+      border-color:#6366f1 !important;
+      background:rgba(99,102,241,.04) !important;
+      transform:scale(1.01) !important;
+      box-shadow:0 0 0 4px rgba(99,102,241,.12) !important;
+    }
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;
+           padding:3px 9px;border-radius:100px;letter-spacing:.03em;white-space:nowrap}
+
+    /* Tab button */
+    .tab-btn{transition:all .2s ease;position:relative}
+
+    /* Stat card hover */
+    .stat-card{transition:all .2s cubic-bezier(.4,0,.2,1)}
+    .stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,.12)}
+
+    /* Gradient text */
+    .grad-text{
+      background:linear-gradient(135deg,#6366f1,#a855f7,#ec4899);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+  </style>
+</head>
+<body>
+<div class="grad-page" id="root"></div>
+
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,useMemo} = React;
+const PG = 25;
+
+const BADGE = {
+  exact:             {lbl:'Exact',      cls:'text-emerald-700 border border-emerald-200', bg:'#ecfdf5'},
+  fuzzy:             {lbl:'Fuzzy',      cls:'text-blue-700 border border-blue-200',       bg:'#eff6ff'},
+  'fuzzy-catalogue': {lbl:'Fuzzy',      cls:'text-violet-700 border border-violet-200',   bg:'#f5f3ff'},
+  'fuzzy-semantic':  {lbl:'Semantic',   cls:'text-amber-700 border border-amber-200',     bg:'#fffbeb'},
+  'fuzzy-secondary': {lbl:'Secondary',  cls:'text-cyan-700 border border-cyan-200',       bg:'#ecfeff'},
+  UNMATCHED:         {lbl:'Unmatched',  cls:'text-red-600 border border-red-200',         bg:'#fef2f2'},
+};
+const badgeOf = mt => BADGE[mt] || {lbl:(mt||'?').toUpperCase(), cls:'text-slate-600 border border-slate-200', bg:'#f8fafc'};
+const pct     = n  => n ? `${Math.round(n*100)}%` : '—';
+
+/* ─── Toast ─────────────────────────────────────────────────────── */
+function Toast({msg,kind,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,4500);return()=>clearTimeout(t)},[]);
+  const styles = {
+    success:{bg:'linear-gradient(135deg,#10b981,#059669)', icon:'✓'},
+    error:  {bg:'linear-gradient(135deg,#ef4444,#dc2626)', icon:'✕'},
+    info:   {bg:'linear-gradient(135deg,#6366f1,#8b5cf6)', icon:'i'},
+  };
+  const s = styles[kind] || styles.info;
+  return(
+    <div className="anim-toast fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3.5 rounded-2xl text-white text-sm"
+         style={{maxWidth:380, background:s.bg, boxShadow:'0 12px 32px rgba(0,0,0,.15)'}}>
+      <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-xs font-bold">{s.icon}</span>
+      <span className="flex-1 leading-snug font-medium">{msg}</span>
+      <button onClick={onClose} className="text-white/70 hover:text-white text-lg leading-none transition-colors">×</button>
+    </div>
+  );
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+function Header({phase}){
+  return(
+    <header className="sticky top-0 z-40" style={{
+      background:'rgba(255,255,255,.75)',
+      backdropFilter:'blur(16px)',
+      WebkitBackdropFilter:'blur(16px)',
+      borderBottom:'1px solid rgba(99,102,241,.1)',
+      boxShadow:'0 1px 16px rgba(99,102,241,.06)',
+    }}>
+      <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md grad-primary">
+            <svg viewBox="0 0 20 20" fill="white" className="w-4.5 h-4.5" style={{width:18,height:18}}>
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+              <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/>
+            </svg>
+          </div>
+          <div>
+            <p className="font-bold text-slate-800 text-sm leading-tight">Lab Catalogue</p>
+            <p className="text-slate-400 text-xs">Reconciliation Engine</p>
+          </div>
+        </div>
+        <nav className="flex items-center gap-1">
+          {['upload','output'].map((p,i)=>{
+            const labels = ['Upload & Process','Review Output'];
+            const active = phase===p || (p==='upload' && phase==='processing');
+            const done   = p==='upload' && phase==='output';
+            return(
+              <div key={p} className="flex items-center gap-1">
+                {i>0&&<div className={`w-8 h-px mx-1 ${done?'grad-primary rounded-full':'bg-slate-200'}`} style={done?{background:'linear-gradient(90deg,#6366f1,#a855f7)'}:{}}/>}
+                <span className={`flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all ${
+                  active?'text-white shadow-md':'text-slate-500'
+                }`} style={active?{background:'linear-gradient(135deg,#6366f1,#8b5cf6)',boxShadow:'0 4px 12px rgba(99,102,241,.3)'}:{}}>
+                  {done&&<svg viewBox="0 0 10 10" fill="currentColor" className="w-3 h-3 anim-check"><path fillRule="evenodd" d="M8.5 2a.5.5 0 01.354.854l-5 5a.5.5 0 01-.708 0l-2.5-2.5a.5.5 0 11.708-.708L3.5 6.793l4.646-4.647A.5.5 0 018.5 2z" clipRule="evenodd"/></svg>}
+                  {labels[i]}
+                </span>
+              </div>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+/* ─── Spinner ────────────────────────────────────────────────────── */
+function Spinner({cls='w-5 h-5',color='#6366f1'}){
+  return(
+    <svg viewBox="0 0 24 24" fill="none" className={`anim-spin ${cls}`}>
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2.5" opacity=".15"/>
+      <path d="M12 3a9 9 0 019 9" stroke={color} strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+/* ─── Upload + Processing ────────────────────────────────────────── */
+const STEPS = [
+  {label:'Parsing File',       desc:'Extracting test names from the document',       icon:'📄'},
+  {label:'Analyzing Schema',   desc:'Identifying columns and data types',             icon:'🔍'},
+  {label:'Mapping Entities',   desc:'Running exact, fuzzy and semantic engines',      icon:'⚡'},
+  {label:'Finalizing Results', desc:'Assembling output and applying fallback rules',  icon:'✅'},
+];
+
+function UploadPage({phase,filename,procStep,procErr,onUpload,onReset}){
+  const [drag,setDrag] = useState(false);
+  const [pct,  setPct]  = useState(0);
+  const [step, setStep] = useState(0);
+  const fileRef = useRef(null);
+  const processing = phase==='processing';
+
+  useEffect(()=>{
+    if(!processing){setPct(0);setStep(0);return;}
+    if(procStep>=4){setPct(100);setStep(3);return;}
+    let v=0;
+    const id=setInterval(()=>{
+      v = v<30?v+3:v<65?v+1.2:v<88?v+0.4:v;
+      const c=Math.min(92,v);
+      setPct(c);
+      setStep(Math.min(3,Math.floor(c/24)));
+    },140);
+    return()=>clearInterval(id);
+  },[processing,procStep]);
+
+  const handle = f => f && onUpload(f);
+
+  return(
+    <div style={{height:'calc(100vh - 57px)',display:'flex',alignItems:'center',justifyContent:'center',padding:'0 24px',overflow:'hidden',position:'relative'}}>
+
+      {/* Background orbs */}
+      <div className="orb" style={{width:400,height:400,top:'-10%',right:'-5%',background:'radial-gradient(circle,rgba(139,92,246,.18),transparent 70%)',animation:'orbFloat 8s ease-in-out infinite'}}/>
+      <div className="orb" style={{width:350,height:350,bottom:'-10%',left:'-5%',background:'radial-gradient(circle,rgba(99,102,241,.14),transparent 70%)',animation:'orbFloat2 10s ease-in-out infinite'}}/>
+      <div className="orb" style={{width:250,height:250,top:'20%',left:'10%',background:'radial-gradient(circle,rgba(236,72,153,.08),transparent 70%)',animation:'orbFloat 12s ease-in-out infinite 2s'}}/>
+
+      <div style={{
+        display:'grid',
+        gridTemplateColumns: processing||procErr ? '1fr 1fr' : '1fr',
+        gap:'28px',
+        width:'100%',
+        maxWidth: processing||procErr ? '920px' : '540px',
+        transition:'all .5s cubic-bezier(.16,1,.3,1)',
+        alignItems:'center',
+        position:'relative',
+        zIndex:1,
+      }}>
+
+        {/* ── LEFT col ── */}
+        <div className="anim-slide">
+          <div className="text-center mb-7">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full mb-5"
+                 style={{background:'linear-gradient(135deg,rgba(99,102,241,.1),rgba(168,85,247,.1))',border:'1px solid rgba(99,102,241,.2)',color:'#6366f1'}}>
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" style={{animation:'pulse 2s infinite'}}/>
+              Provider Catalogue Processor
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight mb-2" style={{color:'#1e293b'}}>
+              {processing ? <>File <span className="grad-text">uploaded</span></> : <>Upload your <span className="grad-text">catalogue</span></>}
+            </h1>
+            <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">
+              {processing ? 'Processing is running on the right →' : "Drop any provider file and we'll match every test name automatically."}
+            </p>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            className={`drop-zone glass cursor-pointer ${processing?'locked':''} ${drag?'drop-active':''}`}
+            style={{border:`2px dashed ${drag?'#6366f1':'rgba(99,102,241,.25)'}`, borderRadius:20, cursor: processing?'default':'pointer'}}
+            onDragOver={e=>{e.preventDefault();if(!processing)setDrag(true)}}
+            onDragLeave={()=>setDrag(false)}
+            onDrop={e=>{e.preventDefault();setDrag(false);handle(e.dataTransfer.files[0])}}
+            onClick={()=>!processing&&fileRef.current?.click()}
+          >
+            <input ref={fileRef} type="file" className="hidden"
+                   accept=".xlsx,.xls,.pdf,.docx,.doc,.csv,.png,.jpg,.jpeg"
+                   onChange={e=>handle(e.target.files?.[0])}/>
+            <div className="flex flex-col items-center gap-4 py-11 px-7 text-center">
+              {processing ? (
+                <>
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center anim-float"
+                       style={{background:'linear-gradient(135deg,rgba(99,102,241,.12),rgba(168,85,247,.12))'}}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" strokeWidth="1.5" className="w-7 h-7">
+                      <defs><linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#a855f7"/></linearGradient></defs>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-700 text-sm truncate max-w-[200px]">{filename}</p>
+                    <p className="text-slate-400 text-xs mt-1">Uploaded successfully</p>
+                  </div>
+                  <span className="badge text-emerald-600 border border-emerald-200" style={{background:'#ecfdf5'}}>✓ In queue</span>
+                </>
+              ) : (
+                <>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${drag?'scale-110':''}`}
+                       style={{background:drag?'linear-gradient(135deg,rgba(99,102,241,.15),rgba(168,85,247,.15))':'rgba(99,102,241,.06)'}}>
+                    <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke={drag?'#6366f1':'#94a3b8'} className="w-7 h-7 transition-all">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-700 text-sm">{drag?'Release to upload':'Drag & drop your file here'}</p>
+                    <p className="text-slate-400 text-xs mt-1">or click to browse</p>
+                  </div>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    {['XLSX','PDF','DOCX','CSV','IMG'].map(t=>(
+                      <span key={t} className="text-xs px-2.5 py-1 rounded-lg font-mono font-semibold"
+                            style={{background:'rgba(99,102,241,.07)',color:'#6366f1',border:'1px solid rgba(99,102,241,.15)'}}>{t}</span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {!processing&&!procErr&&(
+            <div className="flex items-center justify-center gap-6 mt-5">
+              {[['🔒','Local & secure'],['⚡','Multi-engine matching'],['🧠','Self-learning']].map(([e,t],i)=>(
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className="text-base">{e}</span>
+                  <span className="text-slate-400 text-xs font-medium">{t}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT col: processing / error ── */}
+        {(processing||procErr)&&(
+          <div className="anim-right" style={{animationDelay:'.08s'}}>
+            {procErr ? (
+              <div className="glass-dark p-6" style={{border:'1px solid rgba(239,68,68,.2)'}}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{background:'linear-gradient(135deg,rgba(239,68,68,.12),rgba(220,38,38,.08))'}}>
+                    <svg viewBox="0 0 20 20" fill="#ef4444" className="w-5 h-5">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-800 text-sm">Processing failed</p>
+                    <p className="text-slate-400 text-xs mt-0.5">Check the error below</p>
+                  </div>
+                </div>
+                <pre className="text-xs text-red-600 rounded-xl p-4 max-h-52 overflow-auto whitespace-pre-wrap font-mono text-left mb-4"
+                     style={{background:'rgba(239,68,68,.04)',border:'1px solid rgba(239,68,68,.12)'}}>{procErr}</pre>
+                <button onClick={onReset} className="btn w-full py-2.5 rounded-xl text-sm font-semibold text-slate-600"
+                        style={{background:'rgba(99,102,241,.06)',border:'1px solid rgba(99,102,241,.15)'}}>
+                  ← Try another file
+                </button>
+              </div>
+            ) : (
+              <div className="glass-dark p-7">
+                {/* Header row */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{background:'linear-gradient(135deg,rgba(99,102,241,.12),rgba(168,85,247,.12))'}}>
+                    <Spinner cls="w-5 h-5" color="#6366f1"/>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-800 text-sm truncate">{filename}</p>
+                    <p className="text-slate-500 text-xs mt-0.5">{STEPS[step]?.label}</p>
+                  </div>
+                  <span className="font-bold text-lg tabular-nums grad-text">{Math.round(pct)}%</span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-2 rounded-full overflow-hidden mb-7"
+                     style={{background:'linear-gradient(90deg,rgba(99,102,241,.08),rgba(168,85,247,.08))'}}>
+                  <div className="h-full rounded-full progress-bar progress-live" style={{width:`${pct}%`}}/>
+                </div>
+
+                {/* Stepper */}
+                <div className="space-y-1">
+                  {STEPS.map((s,i)=>{
+                    const done   = i<step;
+                    const active = i===step;
+                    const pending= i>step;
+                    return(
+                      <div key={i} className="flex gap-3.5" style={{opacity:pending?.4:1,transition:'opacity .3s'}}>
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all duration-400 ${active?'anim-pulse':''}`}
+                               style={{
+                                 background: done   ? 'linear-gradient(135deg,#10b981,#059669)'
+                                           : active ? 'linear-gradient(135deg,#6366f1,#a855f7)'
+                                           : 'rgba(148,163,184,.15)',
+                                 boxShadow: done||active ? '0 4px 12px rgba(99,102,241,.25)' : 'none',
+                               }}>
+                            {done
+                              ? <svg viewBox="0 0 10 10" fill="white" className="w-3.5 h-3.5 anim-check"><path fillRule="evenodd" d="M8.5 2a.5.5 0 01.354.854l-5 5a.5.5 0 01-.708 0l-2.5-2.5a.5.5 0 11.708-.708L3.5 6.793l4.646-4.647A.5.5 0 018.5 2z" clipRule="evenodd"/></svg>
+                              : <span className="text-xs">{s.icon}</span>
+                            }
+                          </div>
+                          {i<STEPS.length-1&&(
+                            <div className="w-0.5 h-5 my-1 rounded-full transition-all duration-500"
+                                 style={{background:done?'linear-gradient(180deg,#10b981,#059669)':'rgba(148,163,184,.2)'}}/>
+                          )}
+                        </div>
+                        <div className="pb-1 min-w-0 flex-1 flex items-center gap-2">
+                          <div>
+                            <p className={`text-sm font-semibold ${active?'text-indigo-600':done?'text-slate-700':'text-slate-400'}`}>{s.label}</p>
+                            {(active||done)&&<p className="text-slate-400 text-xs mt-0.5">{s.desc}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Stat Card ──────────────────────────────────────────────────── */
+function StatCard({label,value,gradient,icon}){
+  return(
+    <div className="stat-card glass-sm p-4 cursor-default">
+      <div className="flex items-start justify-between mb-2">
+        <span className="text-lg">{icon}</span>
+        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{background:gradient,opacity:.15}}/>
+      </div>
+      <p className="text-2xl font-bold tabular-nums anim-count" style={{background:gradient,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>{value}</p>
+      <p className="text-slate-500 text-xs font-medium mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+/* ─── Editable Cell ──────────────────────────────────────────────── */
+function ECell({value,onSave,ph='Type name…'}){
+  const [editing,setEditing] = useState(false);
+  const [draft,  setDraft]   = useState(value);
+  const ref = useRef(null);
+  useEffect(()=>setDraft(value),[value]);
+  useEffect(()=>{if(editing)ref.current?.focus()},[editing]);
+  const commit=()=>{setEditing(false);const t=draft.trim();if(t!==value)onSave(t);};
+  if(editing) return(
+    <input ref={ref} value={draft} onChange={e=>setDraft(e.target.value)}
+           onBlur={commit}
+           onKeyDown={e=>{if(e.key==='Enter')commit();if(e.key==='Escape'){setDraft(value);setEditing(false);}}}
+           className="ifield w-full rounded-lg px-2.5 py-1.5 text-sm text-slate-800"
+           style={{background:'#fff',border:'1.5px solid #6366f1'}}
+           placeholder={ph}/>
+  );
+  return(
+    <span className="group flex items-center gap-1.5 cursor-text min-h-[28px]" onClick={()=>setEditing(true)}>
+      <span className={`text-sm truncate max-w-[240px] ${value?'text-slate-700':'text-slate-300 italic'}`}>{value||ph}</span>
+      <svg viewBox="0 0 12 12" fill="currentColor"
+           className="w-3 h-3 text-indigo-300 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-all">
+        <path d="M8.51.75a.75.75 0 011.06 0l1.68 1.68a.75.75 0 010 1.06l-6.5 6.5a.75.75 0 01-.38.2L1.75 10.5a.75.75 0 01-.88-.88l.3-2.62a.75.75 0 01.2-.38L8.51.75z"/>
+      </svg>
+    </span>
+  );
+}
+
+/* ─── Pager ──────────────────────────────────────────────────────── */
+function Pager({page,total,count,onChange}){
+  return(
+    <div className="flex items-center justify-between px-5 py-3"
+         style={{borderTop:'1px solid rgba(99,102,241,.08)',background:'rgba(99,102,241,.02)'}}>
+      <span className="text-xs text-slate-400 font-medium">Page {page} of {total} · {count} rows</span>
+      <div className="flex gap-1.5">
+        {[['← Prev',page===1,page-1],['Next →',page===total,page+1]].map(([lbl,dis,p])=>(
+          <button key={lbl} disabled={dis} onClick={()=>onChange(p)}
+            className="btn text-xs px-3.5 py-1.5 rounded-lg font-medium text-slate-600 disabled:opacity-30"
+            style={{background:'rgba(255,255,255,.8)',border:'1px solid rgba(99,102,241,.15)',boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>{lbl}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Search Input ───────────────────────────────────────────────── */
+function SearchInput({value,onChange,placeholder}){
+  return(
+    <div className="relative">
+      <svg viewBox="0 0 16 16" fill="currentColor"
+           className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{color:'#94a3b8'}}>
+        <path fillRule="evenodd" d="M9.965 11.026a5 5 0 111.06-1.06l2.755 2.754a.75.75 0 11-1.06 1.06l-2.755-2.754zM10.5 7a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" clipRule="evenodd"/>
+      </svg>
+      <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+             className="ifield pl-8 pr-3 py-1.5 rounded-xl text-sm text-slate-700 placeholder-slate-300 w-56"
+             style={{background:'rgba(255,255,255,.8)',border:'1px solid rgba(99,102,241,.15)'}}/>
+    </div>
+  );
+}
+
+/* ─── Matched Table ──────────────────────────────────────────────── */
+function MatchedTable({rows,onReject,onEdit}){
+  const [q,setQ]=useState('');const [pg,setPg]=useState(1);
+  const filtered=useMemo(()=>rows.filter(r=>!q||r.provider_name.toLowerCase().includes(q.toLowerCase())||r.catalogue_name.toLowerCase().includes(q.toLowerCase())),[rows,q]);
+  const pages=Math.max(1,Math.ceil(filtered.length/PG));
+  const cur=Math.min(pg,pages);
+  const vis=filtered.slice((cur-1)*PG,cur*PG);
+  return(
+    <>
+      <div className="px-5 py-3.5 flex items-center gap-3 flex-wrap" style={{borderBottom:'1px solid rgba(99,102,241,.08)'}}>
+        <SearchInput value={q} onChange={v=>{setQ(v);setPg(1)}} placeholder="Search matched…"/>
+        <span className="ml-auto text-xs font-medium text-slate-400">{filtered.length} of {rows.length}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{borderBottom:'1px solid rgba(99,102,241,.06)',background:'rgba(99,102,241,.02)'}}>
+              {['#','Original Name','Standardized Name','Confidence','Type','Action'].map((h,i)=>(
+                <th key={i} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider whitespace-nowrap" style={{color:'#94a3b8'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {vis.length===0
+              ? <tr><td colSpan={6} className="text-center py-12 text-slate-400 text-sm">No results</td></tr>
+              : vis.map((r,i)=>(
+                <tr key={r.id} className="trow" style={{borderBottom:'1px solid rgba(99,102,241,.04)'}}>
+                  <td className="px-5 py-3.5 text-xs tabular-nums font-medium" style={{color:'#cbd5e1'}}>{(cur-1)*PG+i+1}</td>
+                  <td className="px-5 py-3.5 max-w-xs">
+                    <span className="block truncate text-sm font-medium text-slate-700" title={r.provider_name}>{r.provider_name}</span>
+                    {r.user_edited&&<span className="badge mt-0.5 text-amber-600 border border-amber-200" style={{background:'#fffbeb',fontSize:10}}>edited</span>}
+                  </td>
+                  <td className="px-5 py-3.5 min-w-[200px]"><ECell value={r.catalogue_name} onSave={v=>onEdit(r.id,v)}/></td>
+                  <td className="px-5 py-3.5 w-36">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0 bg-slate-100">
+                        <div className="h-full rounded-full" style={{
+                          width:`${Math.round((r.confidence||0)*100)}%`,
+                          background:(r.confidence||0)>=.9?'linear-gradient(90deg,#10b981,#059669)':(r.confidence||0)>=.7?'linear-gradient(90deg,#6366f1,#8b5cf6)':'linear-gradient(90deg,#f59e0b,#d97706)'
+                        }}/>
+                      </div>
+                      <span className="text-xs font-semibold tabular-nums" style={{color:'#94a3b8'}}>{pct(r.confidence)}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 w-28">
+                    <span className={`badge ${badgeOf(r.match_type).cls}`} style={{background:badgeOf(r.match_type).bg}}>{badgeOf(r.match_type).lbl}</span>
+                  </td>
+                  <td className="px-5 py-3.5 w-24">
+                    <button onClick={()=>onReject(r.id)}
+                      className="btn text-xs px-3 py-1.5 rounded-lg font-semibold text-red-500"
+                      style={{background:'rgba(239,68,68,.06)',border:'1px solid rgba(239,68,68,.2)'}}>Reject</button>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {pages>1&&<Pager page={cur} total={pages} count={filtered.length} onChange={setPg}/>}
+    </>
+  );
+}
+
+/* ─── Unmatched Table ────────────────────────────────────────────── */
+function UnmatchedTable({rows,onApprove,onEditSuggested}){
+  const [q,setQ]=useState('');const [pg,setPg]=useState(1);
+  const filtered=useMemo(()=>rows.filter(r=>!q||r.provider_name.toLowerCase().includes(q.toLowerCase())||(r.suggested_name||'').toLowerCase().includes(q.toLowerCase())),[rows,q]);
+  const pages=Math.max(1,Math.ceil(filtered.length/PG));
+  const cur=Math.min(pg,pages);
+  const vis=filtered.slice((cur-1)*PG,cur*PG);
+  return(
+    <>
+      <div className="px-5 py-3.5 flex items-center gap-3 flex-wrap" style={{borderBottom:'1px solid rgba(99,102,241,.08)'}}>
+        <SearchInput value={q} onChange={v=>{setQ(v);setPg(1)}} placeholder="Search unmatched…"/>
+        <span className="ml-auto text-xs font-medium text-slate-400">{filtered.length} of {rows.length}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{borderBottom:'1px solid rgba(99,102,241,.06)',background:'rgba(99,102,241,.02)'}}>
+              {['#','Original Name','Standardized Name','Action'].map((h,i)=>(
+                <th key={i} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{color:'#94a3b8'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {vis.length===0
+              ? <tr><td colSpan={4} className="text-center py-16">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                       style={{background:'linear-gradient(135deg,rgba(16,185,129,.1),rgba(5,150,105,.1))'}}>
+                    <svg viewBox="0 0 20 20" fill="none" className="w-7 h-7">
+                      <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" fill="rgba(16,185,129,.15)" stroke="#10b981" strokeWidth="1.5"/>
+                      <path d="M7 10l2 2 4-4" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <p className="text-slate-700 text-sm font-semibold">All items matched!</p>
+                  <p className="text-slate-400 text-xs mt-1">No unmatched tests to review</p>
+                </td></tr>
+              : vis.map((r,i)=>(
+                <tr key={r.id} className="trow" style={{borderBottom:'1px solid rgba(99,102,241,.04)'}}>
+                  <td className="px-5 py-3.5 text-xs tabular-nums font-medium" style={{color:'#cbd5e1'}}>{(cur-1)*PG+i+1}</td>
+                  <td className="px-5 py-3.5 max-w-xs">
+                    <span className="block truncate text-sm font-medium text-slate-700" title={r.provider_name}>{r.provider_name}</span>
+                  </td>
+                  <td className="px-5 py-3.5 min-w-[260px]">
+                    <ECell value={r.suggested_name||''} onSave={v=>onEditSuggested(r.id,v)} ph="Enter catalogue name to approve…"/>
+                  </td>
+                  <td className="px-5 py-3.5 w-28">
+                    <button onClick={()=>onApprove(r.id)}
+                      className="btn text-xs px-3 py-1.5 rounded-lg font-semibold text-emerald-600"
+                      style={{background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.2)'}}>Approve</button>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {pages>1&&<Pager page={cur} total={pages} count={filtered.length} onChange={setPg}/>}
+    </>
+  );
+}
+
+/* ─── Skipped Table ──────────────────────────────────────────────── */
+function SkippedTable({rows,onApprove,onReject,onEditSuggested}){
+  const [q,setQ]=useState('');const [pg,setPg]=useState(1);
+  const filtered=useMemo(()=>rows.filter(r=>!q||r.provider_name.toLowerCase().includes(q.toLowerCase())||(r.suggested_name||'').toLowerCase().includes(q.toLowerCase())),[rows,q]);
+  const pages=Math.max(1,Math.ceil(filtered.length/PG));
+  const cur=Math.min(pg,pages);
+  const vis=filtered.slice((cur-1)*PG,cur*PG);
+  return(
+    <>
+      <div className="mx-5 mt-4 mb-1 px-4 py-3 rounded-xl flex items-start gap-2.5"
+           style={{background:'linear-gradient(135deg,rgba(245,158,11,.06),rgba(217,119,6,.04))',border:'1px solid rgba(245,158,11,.2)'}}>
+        <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+        <p className="text-xs text-amber-700 leading-relaxed">
+          These are <strong>combination tests</strong> that had no single catalogue match.
+          <strong> Approve</strong> → moves to Matched. <strong>Reject</strong> → moves to Unmatched.
+          Any left here are treated as <strong>Unmatched</strong> on export.
+        </p>
+      </div>
+      <div className="px-5 py-3.5 flex items-center gap-3 flex-wrap" style={{borderBottom:'1px solid rgba(99,102,241,.08)'}}>
+        <SearchInput value={q} onChange={v=>{setQ(v);setPg(1)}} placeholder="Search skipped…"/>
+        <span className="ml-auto text-xs font-medium text-slate-400">{filtered.length} of {rows.length}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr style={{borderBottom:'1px solid rgba(99,102,241,.06)',background:'rgba(99,102,241,.02)'}}>
+              {['#','Original Name','Standardized Name','Action'].map((h,i)=>(
+                <th key={i} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{color:'#94a3b8'}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {vis.length===0
+              ? <tr><td colSpan={4} className="text-center py-12 text-slate-400 text-sm">No skipped items</td></tr>
+              : vis.map((r,i)=>(
+                <tr key={r.id} className="trow" style={{borderBottom:'1px solid rgba(99,102,241,.04)'}}>
+                  <td className="px-5 py-3.5 text-xs tabular-nums font-medium" style={{color:'#cbd5e1'}}>{(cur-1)*PG+i+1}</td>
+                  <td className="px-5 py-3.5 max-w-xs">
+                    <span className="block truncate text-sm font-medium text-slate-700" title={r.provider_name}>{r.provider_name}</span>
+                    <span className="badge mt-0.5 text-amber-600 border border-amber-200" style={{background:'#fffbeb',fontSize:10}}>combo test</span>
+                  </td>
+                  <td className="px-5 py-3.5 min-w-[260px]">
+                    <ECell value={r.suggested_name||''} onSave={v=>onEditSuggested(r.id,v)} ph="Enter catalogue name (optional)…"/>
+                  </td>
+                  <td className="px-5 py-3.5 w-44">
+                    <div className="flex gap-2">
+                      <button onClick={()=>onApprove(r.id)}
+                        className="btn text-xs px-3 py-1.5 rounded-lg font-semibold text-emerald-600"
+                        style={{background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.2)'}}>Approve</button>
+                      <button onClick={()=>onReject(r.id)}
+                        className="btn text-xs px-3 py-1.5 rounded-lg font-semibold text-red-500"
+                        style={{background:'rgba(239,68,68,.06)',border:'1px solid rgba(239,68,68,.2)'}}>Reject</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      {pages>1&&<Pager page={cur} total={pages} count={filtered.length} onChange={setPg}/>}
+    </>
+  );
+}
+
+/* ─── Output Screen ──────────────────────────────────────────────── */
+function OutputScreen({filename,initMatched,initUnmatched,initSkipped,stats,semanticStatus,onSync,onFinalize,onReset}){
+  const [matched,  setMatched]  = useState(initMatched);
+  const [unmatched,setUnmatched]= useState(initUnmatched);
+  const [skipped,  setSkipped]  = useState(initSkipped||[]);
+  const [corr,     setCorr]     = useState([]);
+  const [tab,      setTab]      = useState('matched');
+  const [syncing,  setSyncing]  = useState(false);
+  const [finalizing,setFinalizing]=useState(false);
+  const [outFile,  setOutFile]  = useState('');
+  const [done,     setDone]     = useState(false);
+
+  const reject=useCallback(id=>{
+    setMatched(prev=>{const row=prev.find(r=>r.id===id);if(!row)return prev;
+      setCorr(c=>[...c,{type:'rejected',provider_name:row.provider_name,old_catalogue_name:row.catalogue_name,new_catalogue_name:''}]);
+      setUnmatched(u=>[{...row,match_type:'UNMATCHED',suggested_name:row.catalogue_name},...u]);
+      return prev.filter(r=>r.id!==id);});
+  },[]);
+  const editMatched=useCallback((id,v)=>{
+    setMatched(prev=>prev.map(r=>{if(r.id!==id)return r;
+      setCorr(c=>[...c,{type:'edited',provider_name:r.provider_name,old_catalogue_name:r.catalogue_name,new_catalogue_name:v}]);
+      return{...r,catalogue_name:v,user_edited:true};}));
+  },[]);
+  const editSuggested=useCallback((id,v)=>{setUnmatched(prev=>prev.map(r=>r.id===id?{...r,suggested_name:v}:r));},[]);
+  const approve=useCallback(id=>{
+    setUnmatched(prev=>{const row=prev.find(r=>r.id===id);if(!row)return prev;
+      const cat=(row.suggested_name||'').trim();
+      setCorr(c=>[...c,{type:'approved',provider_name:row.provider_name,old_catalogue_name:'',new_catalogue_name:cat}]);
+      setMatched(m=>[...m,{...row,catalogue_name:cat,match_type:'UNMATCHED',confidence:0,user_edited:true}]);
+      return prev.filter(r=>r.id!==id);});
+  },[]);
+  const editSkippedSuggested=useCallback((id,v)=>{setSkipped(prev=>prev.map(r=>r.id===id?{...r,suggested_name:v}:r));},[]);
+  const approveSkipped=useCallback(id=>{
+    setSkipped(prev=>{const row=prev.find(r=>r.id===id);if(!row)return prev;
+      const cat=(row.suggested_name||'').trim();
+      setCorr(c=>[...c,{type:'skipped-approved',provider_name:row.provider_name,old_catalogue_name:'',new_catalogue_name:cat}]);
+      setMatched(m=>[...m,{...row,catalogue_name:cat,match_type:'fuzzy-semantic',confidence:0,user_edited:true}]);
+      return prev.filter(r=>r.id!==id);});
+  },[]);
+  const rejectSkipped=useCallback(id=>{
+    setSkipped(prev=>{const row=prev.find(r=>r.id===id);if(!row)return prev;
+      setCorr(c=>[...c,{type:'skipped-rejected',provider_name:row.provider_name,old_catalogue_name:'',new_catalogue_name:''}]);
+      setUnmatched(u=>[...u,{...row,match_type:'UNMATCHED',suggested_name:row.suggested_name||''}]);
+      return prev.filter(r=>r.id!==id);});
+  },[]);
+  const handleSync=async()=>{
+    if(!corr.length)return;setSyncing(true);
+    await onSync(corr);setCorr([]);setSyncing(false);
+  };
+  const handleFinalize=async()=>{
+    setFinalizing(true);
+    const finalUnmatched=[...unmatched,...skipped.map(r=>({...r,match_type:'UNMATCHED',suggested_name:r.suggested_name||''}))];
+    const f=await onFinalize(matched,finalUnmatched,corr);
+    if(f){setOutFile(f);setDone(true);}
+    setFinalizing(false);
+  };
+
+  const STAT_CARDS = [
+    {label:'Total Tests',  value:stats.total??0,        gradient:'linear-gradient(135deg,#6366f1,#8b5cf6)', icon:'📊'},
+    {label:'Matched',      value:matched.length,         gradient:'linear-gradient(135deg,#10b981,#059669)', icon:'✅'},
+    {label:'Unmatched',    value:unmatched.length,       gradient:'linear-gradient(135deg,#f59e0b,#d97706)', icon:'⚠️'},
+    {label:'Skipped',      value:stats.skipped??0,       gradient:'linear-gradient(135deg,#94a3b8,#64748b)', icon:'⏭️'},
+    {label:'Exact',        value:stats.exact??0,         gradient:'linear-gradient(135deg,#10b981,#34d399)', icon:'🎯'},
+    {label:'Fuzzy',        value:(stats.fuzzy??0)+(stats.fuzzy_catalogue??0), gradient:'linear-gradient(135deg,#3b82f6,#6366f1)', icon:'🔍'},
+    {label:'Semantic',     value:stats.semantic??0,      gradient:'linear-gradient(135deg,#8b5cf6,#a855f7)', icon:'🧠'},
+  ];
+
+  const TABS = [
+    {key:'matched',   label:'Matched',   count:matched.length,   color:'#10b981'},
+    {key:'unmatched', label:'Unmatched', count:unmatched.length, color:'#f59e0b'},
+    {key:'skipped',   label:'Skipped',   count:skipped.length,   color:'#94a3b8'},
+  ];
+
+  return(
+    <div className="anim-fade max-w-7xl mx-auto px-6 py-8" style={{position:'relative'}}>
+      {/* Subtle orbs */}
+      <div className="orb" style={{width:300,height:300,top:-60,right:-60,background:'radial-gradient(circle,rgba(139,92,246,.06),transparent 70%)'}}/>
+      <div className="orb" style={{width:250,height:250,bottom:100,left:-60,background:'radial-gradient(circle,rgba(99,102,241,.05),transparent 70%)'}}/>
+
+      {/* Success banner */}
+      {done&&outFile&&(
+        <div className="rounded-2xl p-4 mb-6 flex items-center gap-4 anim-slide"
+             style={{background:'linear-gradient(135deg,rgba(16,185,129,.08),rgba(5,150,105,.05))',border:'1px solid rgba(16,185,129,.2)'}}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+               style={{background:'linear-gradient(135deg,#10b981,#059669)',boxShadow:'0 4px 12px rgba(16,185,129,.3)'}}>
+            <svg viewBox="0 0 20 20" fill="white" className="w-5 h-5 anim-check">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-emerald-700 font-bold text-sm">Output saved successfully</p>
+            <p className="text-emerald-500 text-xs mt-0.5 font-mono truncate">{outFile}</p>
+          </div>
+          <a href={`/api/download/${encodeURIComponent(outFile)}`} download={outFile}
+             className="btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white flex-shrink-0"
+             style={{background:'linear-gradient(135deg,#10b981,#059669)',boxShadow:'0 4px 16px rgba(16,185,129,.35)'}}>
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
+            </svg>
+            Download Excel
+          </a>
+        </div>
+      )}
+
+      {/* Top bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6" style={{position:'relative',zIndex:1}}>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Review <span className="grad-text">Dashboard</span></h1>
+          <p className="text-slate-400 text-sm mt-0.5 truncate" style={{maxWidth:480}}>{filename}</p>
+        </div>
+        <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
+          <button onClick={handleSync} disabled={syncing||corr.length===0}
+            className="btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 disabled:opacity-40"
+            style={{background:'rgba(255,255,255,.9)',border:'1px solid rgba(99,102,241,.2)',boxShadow:'0 2px 8px rgba(99,102,241,.08)'}}>
+            {syncing?<Spinner cls="w-4 h-4" color="#6366f1"/>
+              :<svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-indigo-400">
+                <path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z" clipRule="evenodd"/>
+              </svg>}
+            Sync to Database
+            {corr.length>0&&<span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+              style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>{corr.length}</span>}
+          </button>
+          <button onClick={handleFinalize} disabled={finalizing}
+            className="btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
+            style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6,#a855f7)',boxShadow:'0 4px 16px rgba(99,102,241,.35)'}}>
+            {finalizing?<Spinner cls="w-4 h-4" color="rgba(255,255,255,.7)"/>
+              :<svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
+              </svg>}
+            Finalise &amp; Export
+          </button>
+          <button onClick={onReset}
+            className="btn px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-500"
+            style={{background:'rgba(255,255,255,.7)',border:'1px solid rgba(148,163,184,.2)'}}>
+            New File
+          </button>
+        </div>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5" style={{position:'relative',zIndex:1}}>
+        {STAT_CARDS.map(c=><StatCard key={c.label} {...c}/>)}
+      </div>
+
+      {/* Semantic status */}
+      {semanticStatus&&(()=>{
+        const isRan=semanticStatus.startsWith('ran');
+        const isErr=semanticStatus.startsWith('error');
+        return(
+          <div className="rounded-xl px-4 py-3 mb-4 flex items-center gap-3"
+               style={{
+                 background: isRan?'linear-gradient(135deg,rgba(16,185,129,.06),rgba(5,150,105,.04))':isErr?'rgba(239,68,68,.04)':'rgba(99,102,241,.03)',
+                 border:`1px solid ${isRan?'rgba(16,185,129,.2)':isErr?'rgba(239,68,68,.15)':'rgba(99,102,241,.1)'}`,
+               }}>
+            <span className={`text-base flex-shrink-0`}>{isRan?'🧠':isErr?'❌':'ℹ️'}</span>
+            <span className="text-xs font-bold flex-shrink-0" style={{color:isRan?'#059669':isErr?'#dc2626':'#6366f1'}}>Semantic Pass</span>
+            <span className="text-xs" style={{color:isRan?'#047857':isErr?'#b91c1c':'#64748b'}}>{semanticStatus}</span>
+          </div>
+        );
+      })()}
+
+      {/* Table card */}
+      <div className="glass overflow-hidden" style={{position:'relative',zIndex:1}}>
+        {/* Tab bar */}
+        <div className="flex" style={{borderBottom:'1px solid rgba(99,102,241,.1)',background:'rgba(99,102,241,.02)'}}>
+          {TABS.map(t=>(
+            <button key={t.key} onClick={()=>setTab(t.key)}
+              className={`tab-btn flex items-center gap-2 px-6 py-4 text-sm font-semibold border-b-2 -mb-px transition-all ${
+                tab===t.key ? 'text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+              style={tab===t.key?{borderBottomColor:'#6366f1'}:{}}>
+              <span className="w-2 h-2 rounded-full" style={{background:t.color}}/>
+              {t.label}
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                    style={{
+                      background: tab===t.key?'linear-gradient(135deg,rgba(99,102,241,.12),rgba(168,85,247,.12))':'rgba(148,163,184,.1)',
+                      color: tab===t.key?'#6366f1':'#94a3b8',
+                    }}>{t.count}</span>
+            </button>
+          ))}
+        </div>
+
+        {tab==='matched'   && <MatchedTable   rows={matched}   onReject={reject}       onEdit={editMatched}/>}
+        {tab==='unmatched' && <UnmatchedTable rows={unmatched} onApprove={approve}     onEditSuggested={editSuggested}/>}
+        {tab==='skipped'   && <SkippedTable   rows={skipped}   onApprove={approveSkipped} onReject={rejectSkipped} onEditSuggested={editSkippedSuggested}/>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── App ────────────────────────────────────────────────────────── */
+function App(){
+  const [phase,     setPhase]     = useState('upload');
+  const [filename,  setFilename]  = useState('');
+  const [procStep,  setProcStep]  = useState(0);
+  const [procErr,   setProcErr]   = useState(null);
+  const [matched,   setMatched]   = useState([]);
+  const [unmatched, setUnmatched] = useState([]);
+  const [skipped,   setSkipped]   = useState([]);
+  const [stats,     setStats]     = useState({});
+  const [semStatus, setSemStatus] = useState('');
+  const [toast,     setToast]     = useState(null);
+
+  const showToast=(msg,kind='info')=>setToast({msg,kind});
+
+  const fetchJSON=async(url,opts)=>{
+    const r=await fetch(url,opts);
+    const txt=await r.text();
+    let d;
+    try{d=JSON.parse(txt);}catch(_){throw new Error(`Server error (${r.status}): ${txt.slice(0,200)}`);}
+    if(!r.ok&&d.error)throw new Error(d.error);
+    return d;
+  };
+
+  const upload=async file=>{
+    setFilename(file.name);setProcErr(null);setProcStep(0);setPhase('processing');
+    const fd=new FormData();fd.append('file',file);
+    let sessionId=null;
+    try{const j=await fetchJSON('/api/process',{method:'POST',body:fd});if(j.error){setProcErr(j.error);return;}sessionId=j.session_id;}
+    catch(e){setProcErr(e.message);return;}
+    if(!sessionId){setProcErr('Server did not return a session ID — restart server.py');return;}
+    const timer=setInterval(async()=>{
+      try{
+        const sj=await fetchJSON(`/api/status/${sessionId}`);
+        if(sj.step!==undefined)setProcStep(sj.step);
+        if(sj.status==='done'){
+          clearInterval(timer);
+          const r=sj.result||{};
+          setMatched(r.matched||[]);setUnmatched(r.unmatched||[]);setSkipped(r.skipped||[]);
+          setStats(r.stats||{});setSemStatus(r.semantic_status||'');
+          setFilename(r.filename||file.name);setPhase('output');
+        }else if(sj.status==='error'){clearInterval(timer);setProcErr(sj.error||'Unknown error');}
+      }catch(e){clearInterval(timer);setProcErr(e.message);}
+    },1500);
+  };
+
+  const sync=async corr=>{
+    try{await fetchJSON('/api/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({corrections:corr})});
+    showToast(`${corr.length} correction${corr.length!==1?'s':''} synced`,'success');}
+    catch(e){showToast(`Sync failed: ${e.message}`,'error');}
+  };
+
+  const finalize=async(matchedRows,unmatchedRows,corr)=>{
+    try{const r=await fetchJSON('/api/finalize',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({matched:matchedRows,unmatched:unmatchedRows,corrections:corr,filename})});
+    showToast('Output file saved','success');return r.output_filename;}
+    catch(e){showToast(`Error: ${e.message}`,'error');return null;}
+  };
+
+  const reset=()=>{
+    setPhase('upload');setFilename('');setProcErr(null);setProcStep(0);
+    setMatched([]);setUnmatched([]);setSkipped([]);setStats({});setSemStatus('');
+  };
+
+  return(
+    <div className="grad-page">
+      <Header phase={phase}/>
+      {(phase==='upload'||phase==='processing')&&(
+        <UploadPage phase={phase} filename={filename} procStep={procStep} procErr={procErr} onUpload={upload} onReset={reset}/>
+      )}
+      {phase==='output'&&(
+        <OutputScreen filename={filename} initMatched={matched} initUnmatched={unmatched} initSkipped={skipped}
+          stats={stats} semanticStatus={semStatus} onSync={sync} onFinalize={finalize} onReset={reset}/>
+      )}
+      {toast&&<Toast msg={toast.msg} kind={toast.kind} onClose={()=>setToast(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

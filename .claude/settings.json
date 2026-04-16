@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ':*)",
+      "Bash(python3 .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/matched_results.csv --threshold 85)",
+      "Edit(/.claude/skills/process-catalogue/**)",
+      "Bash(python3 .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/matched_results_v2.csv --threshold 85)"
+    ]
+  }
+}

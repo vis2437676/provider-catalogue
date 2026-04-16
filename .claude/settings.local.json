@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(process-catalogue)",
+      "Skill(process-catalogue:*)",
+      "Bash(python3 .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/smoke_test.csv --threshold 85)",
+      "Bash(python3 -c ':*)",
+      "Bash(python3)",
+      "Edit(/.claude/skills/process-catalogue/**)",
+      "Bash(python3 .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/matched_results_v3.csv --threshold 85)",
+      "Bash(python .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/matched_results.csv)",
+      "Bash(python3 .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/matched_results.csv)",
+      "Bash(python3 .claude/skills/process-catalogue/scripts/match.py --input /tmp/extracted_names.csv --master refrences/master_file.xlsx --output /tmp/matched_results_v2.csv)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0, '.claude/skills/process-catalogue/scripts'\\); import match; print\\('OK'\\)\")",
+      "Bash(python3 -c \"import openpyxl; wb=openpyxl.load_workbook\\('refrences/master_file.xlsx'\\); ws=wb.active; print\\(f'Rows: {ws.max_row}, Columns: {ws.max_column}'\\)\")",
+      "Bash(python3 -c \"import openpyxl; wb = openpyxl.load_workbook\\('/Users/mahimadhawan/Documents/providerCatalogue/refrences/master_file.xlsx'\\); print\\(f'Rows in master_file.xlsx: {wb.active.max_row}'\\); print\\(f'Columns: {wb.active.max_column}'\\)\")",
+      "Bash(python3 -c \"import rapidfuzz; print\\(rapidfuzz.__version__\\)\")",
+      "Bash(python3 -c \"from rapidfuzz import process; import inspect; sig = inspect.signature\\(process.cdist\\); print\\(sig\\)\")",
+      "Bash(python3 -c \"from rapidfuzz.distance import metrics; print\\(dir\\(metrics\\)\\)\")",
+      "Bash(python3 -c \"from rapidfuzz import process; help\\(process.cdist\\)\")",
+      "Bash(time python3:*)",
+      "Bash(chmod +x /Users/mahimadhawan/Documents/providerCatalogue/webapp/start.sh)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(python3:*)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp",
+      "/Users/mahimadhawan/Documents/providerCatalogue/.claude/projects/-Users-mahimadhawan-Documents-providerCatalogue"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+# Output files (large Excel exports)
+output/
+
+# Master reference database (SQLite, auto-rebuilt)
+refrences/master_file.xlsx.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Temp files
+*.tmp
+~$*
+
+# OS files
+.DS_Store
+desktop.ini
+Thumbs.db
