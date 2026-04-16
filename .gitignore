@@ -9,6 +9,10 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Secrets
+.env
+*.env
+
 # Temp files
 *.tmp
 ~$*
