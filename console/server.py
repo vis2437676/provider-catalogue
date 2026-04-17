@@ -174,19 +174,23 @@ def _rows_to_flat(job: dict) -> list[dict]:
 
 # ── Claude File Parsing ────────────────────────────────────────────────────────
 
-_PARSE_SYSTEM = """You are a medical lab test catalogue parser following the process-catalogue skill parsing guide.
-
-Your ONLY job: extract raw provider test names from the content provided.
-
-RULES (from parsing-guide.md):
-- Return ONLY JSON: {"test_names": ["name1", "name2", ...]}
-- Strip out: prices (Rs/RS + number), codes, units, section headers, page numbers, totals
-- Skip rows that are clearly section dividers (e.g. "MRI CHARGES", "TEST NAME:-", "CT CHARGES", "TEST CHARGES")
-- Skip column headers (e.g. "Sr No", "Test Name", "Rate", "Amount")
-- Preserve original casing and spelling — normalization happens in match.py
-- Remove duplicates
-- Each test name as a separate entry
-"""
+def _build_parse_system() -> str:
+    """CLAUDE.md (domain context) + parsing-guide.md (step instructions)."""
+    parts = []
+    claude_md = PROJECT_ROOT / "CLAUDE.md"
+    if claude_md.exists():
+        parts.append(claude_md.read_text(encoding="utf-8"))
+    parsing_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "parsing-guide.md"
+    if parsing_guide.exists():
+        parts.append(parsing_guide.read_text(encoding="utf-8"))
+    parts.append(
+        "\nYou are now performing Step 1 — Parsing.\n"
+        "Your ONLY job: extract raw provider test names from the content provided.\n"
+        "Return ONLY JSON: {\"test_names\": [\"name1\", \"name2\", ...]}\n"
+        "Preserve original casing and spelling — normalization happens in match.py.\n"
+        "Remove duplicates."
+    )
+    return "\n\n---\n\n".join(parts)
 
 
 def _pre_extract_excel(file_path: str) -> str:
@@ -353,7 +357,7 @@ def _parse_file_with_claude(file_path: str) -> list[str]:
         resp = claude.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=4096,
-            system=_PARSE_SYSTEM,
+            system=_build_parse_system(),
             messages=messages,
         )
         raw  = resp.content[0].text
@@ -382,13 +386,19 @@ def _parse_file_with_claude(file_path: str) -> list[str]:
 # ── Semantic Recovery ──────────────────────────────────────────────────────────
 
 def _load_skill_context() -> str:
-    """Load accuracy-loop-guide.md only — the specific guide for semantic recovery."""
+    """CLAUDE.md (domain context) + accuracy-loop-guide.md (recovery step instructions)."""
     parts = []
+    # Overall domain context
+    claude_md = PROJECT_ROOT / "CLAUDE.md"
+    if claude_md.exists():
+        parts.append(claude_md.read_text(encoding="utf-8"))
+    # Step-specific recovery guide
     loop_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "accuracy-loop-guide.md"
     if loop_guide.exists():
         parts.append(loop_guide.read_text(encoding="utf-8"))
     parts.append(
-        "\nYou are performing the semantic recovery pass (Pass 2 from accuracy-loop-guide.md).\n"
+        "\nYou are now performing Step 3 — Semantic Recovery (Pass 2 from accuracy-loop-guide.md).\n"
+        "match.py has already run (Step 2) — do NOT re-match rows that are already matched.\n"
         "Match each unmatched provider test name to the best catalogue name from the candidates provided.\n"
         "Return ONLY valid JSON: "
         '{"matches": [{"id": "...", "catalogue_name": "exact name or null", "confidence": 0.75, "skipped": false}]}\n'
