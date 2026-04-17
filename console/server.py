@@ -54,7 +54,7 @@ client = OpenAI(
     http_client=httpx.Client(verify=False),
 )
 
-# Claude Sonnet — semantic recovery (follows skill rules + CLAUDE.md)
+# Claude Sonnet — parsing + semantic recovery (accuracy-loop-guide.md)
 claude = anthropic_sdk.Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY"),
     http_client=httpx.Client(verify=False),
@@ -382,16 +382,13 @@ def _parse_file_with_claude(file_path: str) -> list[str]:
 # ── Semantic Recovery ──────────────────────────────────────────────────────────
 
 def _load_skill_context() -> str:
-    """Load CLAUDE.md + accuracy-loop-guide as Claude's system context."""
+    """Load accuracy-loop-guide.md only — the specific guide for semantic recovery."""
     parts = []
-    claude_md = PROJECT_ROOT / "CLAUDE.md"
-    if claude_md.exists():
-        parts.append(claude_md.read_text(encoding="utf-8"))
     loop_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "accuracy-loop-guide.md"
     if loop_guide.exists():
         parts.append(loop_guide.read_text(encoding="utf-8"))
     parts.append(
-        "\nYou are now performing the semantic recovery pass (Pass 2 from accuracy-loop-guide.md).\n"
+        "\nYou are performing the semantic recovery pass (Pass 2 from accuracy-loop-guide.md).\n"
         "Match each unmatched provider test name to the best catalogue name from the candidates provided.\n"
         "Return ONLY valid JSON: "
         '{"matches": [{"id": "...", "catalogue_name": "exact name or null", "confidence": 0.75, "skipped": false}]}\n'

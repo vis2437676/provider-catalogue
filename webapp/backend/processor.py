@@ -406,14 +406,14 @@ def generate_output_excel(
     stem = re.sub(r"[^a-zA-Z0-9_\- ]", "_", Path(filename).stem)[:50].strip("_")
     output_dir = project_root / "output"
     output_dir.mkdir(exist_ok=True)
-    base_name = f"{stem}_reconciled.xlsx"
+    base_name = f"{stem}_standardized_catalogue.xlsx"
     output_path = output_dir / base_name
 
-    # Avoid overwriting
+    # Avoid overwriting (output-guide.md: append timestamp suffix)
     if output_path.exists():
         from datetime import datetime
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = output_dir / f"{stem}_reconciled_{ts}.xlsx"
+        output_path = output_dir / f"{stem}_standardized_catalogue_{ts}.xlsx"
 
     wb = openpyxl.Workbook()
 
