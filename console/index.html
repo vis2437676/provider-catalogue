@@ -120,7 +120,9 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
   font-size:13px;line-height:1.55;word-break:break-word;
 }
 .msg-wrap.user .msg-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:2px}
-.msg-wrap.assistant .msg-bubble{background:#161B27;color:var(--text);border-bottom-left-radius:2px;border:1px solid var(--border)}
+.msg-wrap.assistant .msg-bubble{background:#1C2333;color:#F1F5F9;border-bottom-left-radius:2px;border:1px solid #2D3748;line-height:1.7}
+.msg-bubble ol,.msg-bubble ul{padding-left:18px;margin:4px 0}
+.msg-bubble li{margin-bottom:3px}
 
 /* file bubble */
 .file-bubble{
@@ -1128,9 +1130,10 @@ function renderTable() {
       : r.status==='skipped'
       ? `<button class="btn-unskip" onclick="unskipRow('${r.id}',event)" title="Restore to unmatched">↩ Restore</button>`
       : '';
+    const displayName = r.status==='unmatched' ? stripPrice(r.raw_name) : r.raw_name;
     return `<tr class="${hl}" onclick="openRowModal('${r.id}')" data-id="${r.id}">
       <td style="color:var(--muted);font-size:10px">${i+1}</td>
-      <td style="font-weight:500">${esc(r.raw_name)}</td>
+      <td style="font-weight:500">${esc(displayName)}</td>
       <td onclick="event.stopPropagation()">
         <input class="edit-cell" value="${esc(r.standard_name||'')}" placeholder="— unmatched —"
           onchange="inlineEdit('${r.id}',this.value)" onfocus="this.select()"/>
@@ -1229,15 +1232,26 @@ async function exportFile() {
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
+function stripPrice(s) {
+  // Remove trailing price: "- RS. 5500", "Rs 4000", "RS.5000" etc.
+  return s.replace(/[\s\-–]+R[Ss]\.?\s*[\d,]+\s*$/,'').replace(/[\s\t]+$/,'').trim();
+}
 function uid() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function truncate(s,n) { return s&&s.length>n?s.slice(0,n)+'…':s||''; }
 function fmt(b) { return b>1e6?(b/1e6).toFixed(1)+' MB':b>1e3?(b/1e3).toFixed(0)+' KB':b+' B'; }
 function md(t) {
-  return esc(t)
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/`([^`]+)`/g,'<code style="background:#E5E7EB;padding:1px 4px;border-radius:3px;font-size:11px">$1</code>')
-    .replace(/\n/g,'<br>');
+  let s = esc(t);
+  // bold
+  s = s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  // inline code
+  s = s.replace(/`([^`]+)`/g,'<code style="background:#0D1117;border:1px solid #2D3748;padding:1px 5px;border-radius:4px;font-size:11px;color:#93C5FD">$1</code>');
+  // numbered list: lines starting with "1. " etc
+  s = s.replace(/^(\d+)\.\s+(.+)$/gm, '<li>$2</li>');
+  if (s.includes('<li>')) s = s.replace(/(<li>[\s\S]*?<\/li>)+/g, m => `<ol>${m}</ol>`);
+  // line breaks (only for non-list lines)
+  s = s.replace(/\n/g,'<br>');
+  return s;
 }
 function toast(msg) {
   const t=document.getElementById('toast');
