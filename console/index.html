@@ -469,13 +469,13 @@ tr.hl-yellow:hover{background:#FEF9C3}tr.hl-red:hover{background:#FEE2E2}tr.hl-b
       <div id="chat-meta">0 messages</div>
     </div>
     <div class="topbar-actions">
-      <button class="btn-topbar" onclick="triggerAttach()">
+      <button class="btn-topbar" onclick="triggerAttach()" title="Attach catalogue file">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.2-9.2a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-        Add files
+        Upload Catalogue
       </button>
-      <button class="btn-topbar btn-run" id="run-btn" onclick="runProcessing()" disabled>
-        <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
-        Run
+      <button class="btn-topbar btn-run hidden" id="export-btn" onclick="exportFile()">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export
       </button>
     </div>
   </div>
@@ -485,7 +485,7 @@ tr.hl-yellow:hover{background:#FEF9C3}tr.hl-red:hover{background:#FEE2E2}tr.hl-b
       <div class="msg-avatar">LM</div>
       <div class="msg-inner">
         <div class="msg-sender">Lab Assistant</div>
-        <div class="msg-bubble">Hello! Attach a provider catalogue file using <strong>Add files</strong> or drag it here, then click <strong>Run</strong> to process. I'll map all tests against the master catalogue.</div>
+        <div class="msg-bubble">Hello! Upload a provider catalogue — PDF, Excel, or Word — and I'll automatically map every test to the standard master catalogue. You can review, correct, and export when ready.</div>
       </div>
     </div>
     <div id="typing" class="hidden">
@@ -496,10 +496,10 @@ tr.hl-yellow:hover{background:#FEF9C3}tr.hl-red:hover{background:#FEE2E2}tr.hl-b
   </div>
 
   <div id="suggestions">
-    <div class="chip" onclick="useChip(this)">Show unmatched tests</div>
-    <div class="chip" onclick="useChip(this)">Fix low confidence rows</div>
-    <div class="chip" onclick="useChip(this)">Summarise results</div>
-    <div class="chip" onclick="useChip(this)">What is CBC mapped to?</div>
+    <div class="chip" onclick="useChip(this)">Show all unmatched tests</div>
+    <div class="chip" onclick="useChip(this)">Which tests have low confidence?</div>
+    <div class="chip" onclick="useChip(this)">Summarise the mapping results</div>
+    <div class="chip" onclick="useChip(this)">How was CBC mapped?</div>
   </div>
 
   <div id="input-bar">
@@ -694,7 +694,7 @@ function newSession(){
   S.sessions.unshift(ses);
   S.current=id;S.pendingFile=null;S.mappings=[];S.progLog=[];
   saveSessions();renderHistory();renderChat();renderProgress();
-  document.getElementById('run-btn').disabled=true;
+  document.getElementById('export-btn').classList.add('hidden');
   document.getElementById('chat-title').textContent='New Chat';
   document.getElementById('chat-meta').textContent='0 messages';
 }
@@ -704,12 +704,12 @@ function switchSession(id){
   const ses=curSession();
   S.mappings=ses?.mappings||[];S.progLog=ses?.progLog||[];
   renderHistory();renderChat();renderProgress();
-  if(ses?.stats)showWorkspaceResults(ses.stats);
+  if(ses?.stats){showWorkspaceResults(ses.stats);document.getElementById('export-btn').classList.remove('hidden');}
   else document.getElementById('ws-results').classList.add('hidden');
-  document.getElementById('run-btn').disabled=!S.pendingFile;
   document.getElementById('chat-title').textContent=ses?.name||'Chat';
   const cnt=(ses?.messages||[]).length;
   document.getElementById('chat-meta').textContent=`${cnt} message${cnt!==1?'s':''}`;
+  if(ses?.stats)document.getElementById('export-btn').classList.remove('hidden');
 }
 
 function renderHistory(){
@@ -732,7 +732,7 @@ function renderChat(){
   msgs.innerHTML='';
   const welcome=document.createElement('div');
   welcome.className='msg-wrap assistant';
-  welcome.innerHTML=`<div class="msg-avatar">LM</div><div class="msg-inner"><div class="msg-sender">Lab Assistant</div><div class="msg-bubble">Hello! Attach a provider catalogue file using <strong>Add files</strong> or drag it here, then click <strong>Run</strong> to process.</div></div>`;
+  welcome.innerHTML=`<div class="msg-avatar">LM</div><div class="msg-inner"><div class="msg-sender">Lab Assistant</div><div class="msg-bubble">Hello! Upload a provider catalogue — PDF, Excel, or Word — and I'll automatically map every test to the standard master catalogue. You can review, correct, and export when ready.</div></div>`;
   msgs.appendChild(welcome);
   (ses?.messages||[]).forEach(m=>_appendMsgEl(m));
   msgs.appendChild(typing);
@@ -812,11 +812,13 @@ function onFileSelected(file){
   if(!S.current)newSession();
   S.pendingFile={file,name:file.name,size:fmt(file.size)};
   document.getElementById('attach-input').value='';
-  document.getElementById('run-btn').disabled=false;
   const ses=curSession();
-  if(ses){ses.name='process file '+file.name.replace(/\.[^.]+$/,'');document.getElementById('chat-title').textContent=ses.name;}
+  const label=file.name.replace(/\.[^.]+$/,'');
+  if(ses){ses.name=label;document.getElementById('chat-title').textContent=label;}
   pushMsg({role:'user',type:'file',filename:file.name,filesize:fmt(file.size),content:`Attached: ${file.name}`});
-  addInputFile(file.name,fmt(file.size));renderHistory();toast('File attached — click Run to process');
+  addInputFile(file.name,fmt(file.size));renderHistory();
+  // Auto-process immediately — no Run button needed
+  runProcessing();
 }
 function onDragOver(e){e.preventDefault();document.getElementById('drop-overlay').classList.add('show');}
 function onDragLeave(e){if(!document.getElementById('center').contains(e.relatedTarget))document.getElementById('drop-overlay').classList.remove('show');}
@@ -824,9 +826,11 @@ function onDrop(e){e.preventDefault();document.getElementById('drop-overlay').cl
 
 async function runProcessing(){
   if(!S.pendingFile||!S.current)return;
-  document.getElementById('run-btn').disabled=true;
   const fd=new FormData();fd.append('file',S.pendingFile.file);
   updateProgress(0,'Uploading…',false);
+  // Push a live progress bubble into the chat
+  const progId=uid();
+  _pushProgBubble(progId,0,'Uploading catalogue…');
   let jobId;
   try{
     const r=await fetch(`${API}/api/upload`,{method:'POST',body:fd});
@@ -834,13 +838,47 @@ async function runProcessing(){
     const d=await r.json();jobId=d.job_id;
   }catch(e){
     updateProgress(0,'Upload failed',false);
+    _removeProgBubble(progId);
     pushMsg({role:'assistant',type:'text',content:`⚠️ Upload failed: ${e.message}`});return;
   }
   const ses=curSession();if(ses)ses.jobId=jobId;
-  S.pendingFile=null;addProgressLog(ses?.name||'Job','running');pollProgress(jobId);
+  S.pendingFile=null;addProgressLog(ses?.name||'Job','running');
+  pollProgress(jobId,progId);
 }
 
-async function pollProgress(jobId){
+// ── In-chat progress bubble ──────────────────────────────────────────────────
+function _pushProgBubble(id,pct,step){
+  const msgs=document.getElementById('messages');
+  const typing=document.getElementById('typing');
+  const w=document.createElement('div');
+  w.className='msg-wrap assistant';w.id='pb-'+id;
+  w.innerHTML=_progBubbleHTML(pct,step);
+  msgs.insertBefore(w,typing);msgs.scrollTop=9999;
+}
+function _updateProgBubble(id,pct,step){
+  const el=document.getElementById('pb-'+id);
+  if(el){el.innerHTML=_progBubbleHTML(pct,step);document.getElementById('messages').scrollTop=9999;}
+}
+function _removeProgBubble(id){
+  const el=document.getElementById('pb-'+id);if(el)el.remove();
+}
+function _progBubbleHTML(pct,step){
+  return `<div class="msg-avatar">LM</div><div class="msg-inner">
+    <div class="msg-sender">Lab Assistant</div>
+    <div class="msg-bubble" style="min-width:270px;max-width:360px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-weight:600;font-size:13px;color:var(--text)">Processing catalogue…</span>
+        <span style="font-size:12px;font-weight:600;color:var(--primary)">${pct}%</span>
+      </div>
+      <div style="height:5px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:10px">
+        <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:999px;transition:width .4s ease"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary)">${esc(step)}</div>
+    </div>
+  </div>`;
+}
+
+async function pollProgress(jobId,progId){
   const es=new EventSource(`${API}/api/status/${jobId}`);
   es.onmessage=async e=>{
     const d=JSON.parse(e.data);
@@ -851,14 +889,29 @@ async function pollProgress(jobId){
       const data=await r.json();
       S.mappings=data.mappings;
       const ses=curSession();if(ses){ses.mappings=S.mappings;ses.stats=data.stats;}
+      // Remove live progress bubble, show result
+      _removeProgBubble(progId);
       pushMsg({role:'assistant',type:'result',stats:data.stats,content:'Processing complete'});
+      // If there are unmatched rows, push an action prompt
+      const u=data.stats?.unmatched||0;
+      if(u>0){
+        pushMsg({role:'assistant',type:'text',content:`I found **${u} unmatched test${u>1?'s':''}** that couldn't be mapped automatically. Open the mapping table to fill them in — or ask me about any specific test.`,action:{
+          summary:`Review ${u} unmatched test${u>1?'s':''} in the mapping table`,
+          type:'open_table',filter:'unmatched'
+        }});
+      }
       addOutputFile(ses?.name||'output',data.filename||'output');
       renderProgress();saveSessions();
       document.getElementById('tbl-stats').innerHTML=statPills(data.stats);
       showWorkspaceResults(data.stats);
+      document.getElementById('export-btn').classList.remove('hidden');
     }else if(d.status==='error'){
       es.close();updateProgressLog(jobId,'error');
+      _removeProgBubble(progId);
       pushMsg({role:'assistant',type:'text',content:`⚠️ Processing failed: ${d.error}`});
+    }else{
+      // Update the live bubble with current step
+      _updateProgBubble(progId,d.progress||0,d.step||'Processing…');
     }
   };
   es.onerror=()=>es.close();
@@ -941,6 +994,13 @@ function setAILoading(v){
 
 async function approveAction(cardId,action){
   const card=document.getElementById(cardId);if(!card)return;
+  // Special action: open mapping table filtered to unmatched
+  if(action?.type==='open_table'){
+    card.innerHTML=`<div class="action-card-summary" style="color:var(--green)">✓ Opening mapping table…</div>`;
+    openTable();
+    if(action.filter){document.getElementById('tbl-filter').value=action.filter;filterTable();}
+    return;
+  }
   card.innerHTML=`<div class="action-card-summary" style="color:var(--green)">Applying…</div>`;
   const ses=curSession();if(!ses?.jobId)return;
   try{
