@@ -590,6 +590,26 @@ tr.hl-blue:hover{background:#152847}
       </div>
     </div>
 
+    <!-- Results -->
+    <div class="ws-section hidden" id="ws-results">
+      <div class="ws-sec-hdr">
+        <span>Results</span>
+        <div class="sec-actions">
+          <span style="font-size:10px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:3px">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            Done
+          </span>
+        </div>
+      </div>
+      <div class="ws-sec-body" style="padding:0 10px 12px">
+        <div id="ws-result-stats" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+        <button class="btn-view-table" style="width:100%;justify-content:center" onclick="openTable()">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18M3 9h18M3 15h18M3 21h18"/></svg>
+          View Mapping Table
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
 </div><!-- /app -->
@@ -718,6 +738,8 @@ function switchSession(id) {
   renderHistory();
   renderChat();
   renderProgress();
+  if (ses?.stats) showWorkspaceResults(ses.stats);
+  else document.getElementById('ws-results').classList.add('hidden');
   const jid = ses?.jobId;
   document.getElementById('run-btn').disabled = !S.pendingFile;
   const title = ses?.name || 'Chat';
@@ -921,6 +943,8 @@ async function pollProgress(jobId) {
 
       // Update table stats bar
       document.getElementById('tbl-stats').innerHTML = statPills(data.stats);
+      // Show results panel in workspace
+      showWorkspaceResults(data.stats);
 
     } else if (d.status === 'error') {
       es.close();
@@ -1261,6 +1285,19 @@ function toast(msg) {
 function fileIcon(color='#2563EB') {
   return `<svg width="14" height="14" fill="none" stroke="${color}" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`;
 }
+function showWorkspaceResults(stats) {
+  const panel = document.getElementById('ws-results');
+  const statsEl = document.getElementById('ws-result-stats');
+  if (!panel || !stats) return;
+  panel.classList.remove('hidden');
+  statsEl.innerHTML = `
+    <span class="rs total">Total: ${stats.total||0}</span>
+    <span class="rs matched">Matched: ${stats.matched||0}</span>
+    <span class="rs unmatched">Unmatched: ${stats.unmatched||0}</span>
+    ${stats.skipped ? `<span class="rs skipped">Skipped: ${stats.skipped}</span>` : ''}
+  `;
+}
+
 function statPills(s) {
   return `<span class="rs total">Total: ${s.total||0}</span>
     <span class="rs matched">Matched: ${s.matched||0}</span>
