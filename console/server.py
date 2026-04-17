@@ -174,23 +174,19 @@ def _rows_to_flat(job: dict) -> list[dict]:
 
 # ── Claude File Parsing ────────────────────────────────────────────────────────
 
-def _build_parse_system() -> str:
-    """CLAUDE.md (domain context) + parsing-guide.md (step instructions)."""
-    parts = []
-    claude_md = PROJECT_ROOT / "CLAUDE.md"
-    if claude_md.exists():
-        parts.append(claude_md.read_text(encoding="utf-8"))
-    parsing_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "parsing-guide.md"
-    if parsing_guide.exists():
-        parts.append(parsing_guide.read_text(encoding="utf-8"))
-    parts.append(
-        "\nYou are now performing Step 1 — Parsing.\n"
-        "Your ONLY job: extract raw provider test names from the content provided.\n"
-        "Return ONLY JSON: {\"test_names\": [\"name1\", \"name2\", ...]}\n"
-        "Preserve original casing and spelling — normalization happens in match.py.\n"
-        "Remove duplicates."
-    )
-    return "\n\n---\n\n".join(parts)
+_PARSE_SYSTEM = """You are a medical lab test catalogue parser following the process-catalogue skill parsing guide.
+
+Your ONLY job: extract raw provider test names from the content provided.
+
+RULES (from parsing-guide.md):
+- Return ONLY JSON: {"test_names": ["name1", "name2", ...]}
+- Strip out: prices (Rs/RS + number), codes, units, section headers, page numbers, totals
+- Skip rows that are clearly section dividers (e.g. "MRI CHARGES", "TEST NAME:-", "CT CHARGES", "TEST CHARGES")
+- Skip column headers (e.g. "Sr No", "Test Name", "Rate", "Amount")
+- Preserve original casing and spelling — normalization happens in match.py
+- Remove duplicates
+- Each test name as a separate entry
+"""
 
 
 def _pre_extract_excel(file_path: str) -> str:
@@ -357,7 +353,7 @@ def _parse_file_with_claude(file_path: str) -> list[str]:
         resp = claude.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=4096,
-            system=_build_parse_system(),
+            system=_PARSE_SYSTEM,
             messages=messages,
         )
         raw  = resp.content[0].text
@@ -386,19 +382,13 @@ def _parse_file_with_claude(file_path: str) -> list[str]:
 # ── Semantic Recovery ──────────────────────────────────────────────────────────
 
 def _load_skill_context() -> str:
-    """CLAUDE.md (domain context) + accuracy-loop-guide.md (recovery step instructions)."""
+    """Load accuracy-loop-guide.md only — the specific guide for semantic recovery."""
     parts = []
-    # Overall domain context
-    claude_md = PROJECT_ROOT / "CLAUDE.md"
-    if claude_md.exists():
-        parts.append(claude_md.read_text(encoding="utf-8"))
-    # Step-specific recovery guide
     loop_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "accuracy-loop-guide.md"
     if loop_guide.exists():
         parts.append(loop_guide.read_text(encoding="utf-8"))
     parts.append(
-        "\nYou are now performing Step 3 — Semantic Recovery (Pass 2 from accuracy-loop-guide.md).\n"
-        "match.py has already run (Step 2) — do NOT re-match rows that are already matched.\n"
+        "\nYou are performing the semantic recovery pass (Pass 2 from accuracy-loop-guide.md).\n"
         "Match each unmatched provider test name to the best catalogue name from the candidates provided.\n"
         "Return ONLY valid JSON: "
         '{"matches": [{"id": "...", "catalogue_name": "exact name or null", "confidence": 0.75, "skipped": false}]}\n'
@@ -750,148 +740,6 @@ async def update_mapping_status(body: StatusBody):
     raise HTTPException(404, "Row not found")
 
 
-# ── Output Generation (Claude Sonnet + output-guide.md) ───────────────────────
-
-def _build_output_system() -> str:
-    """CLAUDE.md (domain context) + output-guide.md (output step instructions)."""
-    parts = []
-    claude_md = PROJECT_ROOT / "CLAUDE.md"
-    if claude_md.exists():
-        parts.append(claude_md.read_text(encoding="utf-8"))
-    output_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "output-guide.md"
-    if output_guide.exists():
-        parts.append(output_guide.read_text(encoding="utf-8"))
-    parts.append(
-        "\nYou are now performing Step 4 — Output Generation.\n"
-        "Given the template columns from Output_format.xlsx, map the result fields to the correct column names.\n"
-        "Return ONLY JSON: "
-        '{"col_catalogue": "<column name>", "col_provider": "<column name>", '
-        '"col_match_type": "<column name>", "col_confidence": "<column name>"}\n'
-        "Use the exact column names from the template. If no match exists, use the standard name."
-    )
-    return "\n\n---\n\n".join(parts)
-
-
-def _generate_output_with_claude(
-    matched_rows: list[dict],
-    unmatched_rows: list[dict],
-    filename: str,
-) -> str:
-    """
-    Step 4 — Output Generation following output-guide.md:
-    1. Read Output_format.xlsx to discover template columns (never hardcode)
-    2. Ask Claude Sonnet to map result fields → template columns
-    3. Write matched rows to main sheet, unmatched to UNMATCHED sheet
-    4. Drop SKIPPED rows entirely
-    5. Save to output/<provider_name>_standardized_catalogue.xlsx
-    """
-    import openpyxl
-    import pandas as pd
-    from openpyxl.styles import Alignment, Font, PatternFill
-
-    # Step 1 — Read template columns from Output_format.xlsx
-    tpl_path = PROJECT_ROOT / "refrences" / "Output_format.xlsx"
-    try:
-        tpl_df = pd.read_excel(tpl_path, nrows=0)
-        template_columns = list(tpl_df.columns)
-    except Exception:
-        template_columns = []
-
-    # Step 2 — Claude maps result fields → template column names
-    col_catalogue = "Catalogue Test Name"
-    col_provider  = "Provider Test Name"
-    col_match     = "Match Type"
-    col_conf      = "Confidence Score"
-
-    if template_columns and os.environ.get("ANTHROPIC_API_KEY"):
-        try:
-            prompt = (
-                f"Template columns from Output_format.xlsx: {template_columns}\n\n"
-                "Map these result fields to the correct template column names:\n"
-                "- Catalogue Test Name (the standardized/matched name)\n"
-                "- Provider Test Name (the original raw name from the provider)\n"
-                "- Match Type (exact / fuzzy / fuzzy-semantic / UNMATCHED)\n"
-                "- Confidence Score (percentage 0–100%)\n\n"
-                'Return JSON: {"col_catalogue": "...", "col_provider": "...", '
-                '"col_match_type": "...", "col_confidence": "..."}'
-            )
-            resp = claude.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=512,
-                system=_build_output_system(),
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = resp.content[0].text
-            m   = re.search(r'\{[\s\S]*\}', raw)
-            if m:
-                mapping      = json.loads(m.group(0))
-                col_catalogue = mapping.get("col_catalogue", col_catalogue)
-                col_provider  = mapping.get("col_provider",  col_provider)
-                col_match     = mapping.get("col_match_type", col_match)
-                col_conf      = mapping.get("col_confidence", col_conf)
-        except Exception:
-            import traceback; traceback.print_exc()
-
-    OUTPUT_COLS = [col_catalogue, col_provider, col_match, col_conf]
-
-    def _to_record(row: dict, status: str) -> dict:
-        conf = row.get("confidence", 0)
-        return {
-            col_catalogue: row.get("catalogue_name", ""),
-            col_provider:  row.get("provider_name",  ""),
-            col_match:     row.get("match_type", status),
-            col_conf:      f"{conf:.0%}" if conf else "",
-        }
-
-    # Step 3 — Build output path (output-guide.md: _standardized_catalogue.xlsx)
-    stem       = re.sub(r"[^a-zA-Z0-9_\- ]", "_", Path(filename).stem)[:50].strip("_")
-    output_dir = PROJECT_ROOT / "output"
-    output_dir.mkdir(exist_ok=True)
-    out_path   = output_dir / f"{stem}_standardized_catalogue.xlsx"
-    if out_path.exists():
-        from datetime import datetime
-        ts       = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = output_dir / f"{stem}_standardized_catalogue_{ts}.xlsx"
-
-    # Step 4 — Write Excel
-    hdr_font = Font(color="FFFFFF", bold=True)
-    wb       = openpyxl.Workbook()
-
-    # Main sheet — matched rows
-    ws_m = wb.active
-    ws_m.title = "Matched"
-    fill_m = PatternFill("solid", fgColor="1E3A5F")
-    for ci, col in enumerate(OUTPUT_COLS, 1):
-        c = ws_m.cell(row=1, column=ci, value=col)
-        c.fill = fill_m; c.font = hdr_font
-        c.alignment = Alignment(horizontal="center")
-    for ri, row in enumerate(matched_rows, 2):
-        rec = _to_record(row, "MATCHED")
-        for ci, col in enumerate(OUTPUT_COLS, 1):
-            ws_m.cell(row=ri, column=ci, value=rec.get(col, ""))
-
-    # UNMATCHED sheet — for manual review
-    ws_u = wb.create_sheet("UNMATCHED")
-    fill_u = PatternFill("solid", fgColor="7F1D1D")
-    for ci, col in enumerate(OUTPUT_COLS, 1):
-        c = ws_u.cell(row=1, column=ci, value=col)
-        c.fill = fill_u; c.font = hdr_font
-        c.alignment = Alignment(horizontal="center")
-    for ri, row in enumerate(unmatched_rows, 2):
-        rec = _to_record(row, "UNMATCHED")
-        for ci, col in enumerate(OUTPUT_COLS, 1):
-            ws_u.cell(row=ri, column=ci, value=rec.get(col, ""))
-
-    # Auto-width
-    for ws in (ws_m, ws_u):
-        for col_cells in ws.columns:
-            width = max((len(str(c.value or "")) for c in col_cells), default=12)
-            ws.column_dimensions[col_cells[0].column_letter].width = min(width + 4, 55)
-
-    wb.save(str(out_path))
-    return str(out_path)
-
-
 # ── Export ─────────────────────────────────────────────────────────────────────
 @app.get("/api/export/{job_id}")
 async def export(job_id: str):
@@ -911,8 +759,7 @@ async def export(job_id: str):
                     "old_catalogue_name": "", "new_catalogue_name": r["standard_name"]}
                    for r in mappings if r["status"] == "matched" and r.get("highlight") == "ai"]
 
-    # Step 4 — Generate output using Claude Sonnet + output-guide.md
-    out_path = _generate_output_with_claude(matched_rows, unmatched_rows, job["filename"])
+    out_path = generate_output_excel(job_id, matched_rows, unmatched_rows, job["filename"], PROJECT_ROOT)
 
     if corrections:
         apply_learnings(corrections, PROJECT_ROOT)
