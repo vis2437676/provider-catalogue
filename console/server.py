@@ -172,6 +172,213 @@ def _rows_to_flat(job: dict) -> list[dict]:
     return rows
 
 
+# ── Claude File Parsing ────────────────────────────────────────────────────────
+
+_PARSE_SYSTEM = """You are a medical lab test catalogue parser following the process-catalogue skill parsing guide.
+
+Your ONLY job: extract raw provider test names from the content provided.
+
+RULES (from parsing-guide.md):
+- Return ONLY JSON: {"test_names": ["name1", "name2", ...]}
+- Strip out: prices (Rs/RS + number), codes, units, section headers, page numbers, totals
+- Skip rows that are clearly section dividers (e.g. "MRI CHARGES", "TEST NAME:-", "CT CHARGES", "TEST CHARGES")
+- Skip column headers (e.g. "Sr No", "Test Name", "Rate", "Amount")
+- Preserve original casing and spelling — normalization happens in match.py
+- Remove duplicates
+- Each test name as a separate entry
+"""
+
+
+def _pre_extract_excel(file_path: str) -> str:
+    """
+    Parsing guide — Excel:
+    Identify column most likely containing test names
+    (headers like Test Name, Item, Test, Description, or first text column).
+    Extract all non-empty values; skip header rows, totals, section dividers.
+    """
+    import pandas as pd
+    xl = pd.ExcelFile(file_path)
+    parts = []
+    for sheet in xl.sheet_names:
+        df = xl.parse(sheet, header=None).astype(str)
+        parts.append(f"=== Sheet: {sheet} ({len(df)} rows x {len(df.columns)} cols) ===")
+        # Show first 3 rows so Claude can identify headers
+        parts.append("First 3 rows (to identify column structure):")
+        for _, row in df.head(3).iterrows():
+            parts.append("  " + " | ".join(str(v) for v in row.values))
+        parts.append("All rows:")
+        for _, row in df.iterrows():
+            parts.append(" | ".join(str(v) for v in row.values))
+    return "\n".join(parts)
+
+
+def _pre_extract_pdf(file_path: str) -> str:
+    """
+    Parsing guide — PDF:
+    Extract text; Claude identifies lines that are test names
+    (short noun phrases) and strips prices, codes, section headers, page numbers.
+    """
+    import pdfplumber
+    pages = []
+    with pdfplumber.open(file_path) as pdf:
+        for i, page in enumerate(pdf.pages, 1):
+            t = page.extract_text()
+            if t:
+                pages.append(f"--- Page {i} ---\n{t}")
+    return "\n".join(pages)
+
+
+def _pre_extract_docx(file_path: str) -> str:
+    """
+    Parsing guide — DOCX:
+    Extract from tables first (most catalogues are table-formatted),
+    then paragraphs. Show structure so Claude can pick the right column.
+    """
+    from docx import Document
+    doc   = Document(file_path)
+    parts = []
+
+    # Tables first — show structure + all rows
+    for ti, table in enumerate(doc.tables):
+        parts.append(f"=== Table {ti} ({len(table.rows)} rows x {len(table.columns)} cols) ===")
+        # First 3 rows to show headers/structure
+        for ri, row in enumerate(table.rows[:3]):
+            cells = [c.text.strip() for c in row.cells]
+            parts.append(f"  Row {ri}: {cells}")
+        parts.append("All rows:")
+        for row in table.rows:
+            cells = [c.text.strip() for c in row.cells]
+            parts.append("  " + " | ".join(cells))
+
+    # Paragraphs
+    if doc.paragraphs:
+        parts.append("=== Paragraphs ===")
+        for para in doc.paragraphs:
+            t = para.text.strip()
+            if t:
+                parts.append(t)
+
+    return "\n".join(parts)
+
+
+def _pre_extract_image(file_path: str) -> bytes:
+    """Return raw image bytes for Claude vision."""
+    return Path(file_path).read_bytes()
+
+
+def _parse_file_with_claude(file_path: str) -> list[str]:
+    """
+    Use Claude Sonnet to extract test names following the skill parsing guide.
+    Each file type is pre-processed in Python per guide instructions,
+    then Claude identifies and cleans the test names.
+    """
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return []
+
+    path = Path(file_path)
+    ext  = path.suffix.lower()
+
+    try:
+        # ── Step 1: Pre-process per guide ────────────────────────────────────
+        if ext in (".xlsx", ".xls"):
+            content = _pre_extract_excel(file_path)
+            prompt  = (
+                "This is an Excel provider catalogue.\n"
+                "Following the parsing guide: identify the column most likely containing "
+                "test names (headers like 'Test Name', 'Item', 'Test', 'Description', or first text column). "
+                "Extract all non-empty values from that column. "
+                "Skip header rows, totals, section dividers.\n\n"
+                f"{content[:80_000]}\n\n"
+                'Return JSON: {"test_names": ["name1", ...]}'
+            )
+            messages = [{"role": "user", "content": prompt}]
+
+        elif ext == ".pdf":
+            content = _pre_extract_pdf(file_path)
+            prompt  = (
+                "This is a PDF provider catalogue.\n"
+                "Following the parsing guide: identify lines that represent test names "
+                "(typically short noun phrases). "
+                "Strip out: prices (Rs/RS + numbers), codes, units, section headers "
+                "(e.g. 'MRI CHARGES', 'CT CHARGES', 'TEST NAME'), page numbers.\n\n"
+                f"{content[:80_000]}\n\n"
+                'Return JSON: {"test_names": ["name1", ...]}'
+            )
+            messages = [{"role": "user", "content": prompt}]
+
+        elif ext in (".docx", ".doc"):
+            content = _pre_extract_docx(file_path)
+            prompt  = (
+                "This is a Word document provider catalogue.\n"
+                "Following the parsing guide: tables are extracted first (most catalogues are table-formatted). "
+                "Identify which table column holds test names "
+                "(look for headers like 'Test Name', 'Item', or inspect row values). "
+                "Strip section headers, introductory paragraphs, footnotes.\n\n"
+                f"{content[:80_000]}\n\n"
+                'Return JSON: {"test_names": ["name1", ...]}'
+            )
+            messages = [{"role": "user", "content": prompt}]
+
+        elif ext in (".jpg", ".jpeg", ".png", ".webp"):
+            # Image: Claude vision reads directly
+            import base64
+            img_bytes = _pre_extract_image(file_path)
+            img_b64   = base64.standard_b64encode(img_bytes).decode()
+            media_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                         ".png": "image/png",  ".webp": "image/webp"}
+            messages = [{"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64",
+                    "media_type": media_map.get(ext, "image/jpeg"), "data": img_b64}},
+                {"type": "text", "text": (
+                    "This is an image of a provider catalogue. "
+                    "Following the parsing guide: scan for test names, ignore logos/headers/footers/prices. "
+                    "If it's a table, extract only the test name column.\n"
+                    'Return JSON: {"test_names": ["name1", ...]}'
+                )},
+            ]}]
+
+        elif ext == ".csv":
+            content  = path.read_text(encoding="utf-8", errors="ignore")
+            prompt   = (
+                "This is a CSV provider catalogue. Extract all test names.\n\n"
+                f"{content[:80_000]}\n\n"
+                'Return JSON: {"test_names": ["name1", ...]}'
+            )
+            messages = [{"role": "user", "content": prompt}]
+
+        else:
+            return []
+
+        # ── Step 2: Claude extracts test names ───────────────────────────────
+        resp = claude.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            system=_PARSE_SYSTEM,
+            messages=messages,
+        )
+        raw  = resp.content[0].text
+        m    = re.search(r'\{[\s\S]*\}', raw)
+        if not m:
+            return []
+
+        data  = json.loads(m.group(0))
+        names = [str(n).strip() for n in data.get("test_names", []) if str(n).strip()]
+
+        # ── Step 3: Quality checks (parsing-guide.md) ────────────────────────
+        # Remove duplicates preserving order
+        seen, unique = set(), []
+        for n in names:
+            if n.lower() not in seen:
+                seen.add(n.lower())
+                unique.append(n)
+
+        return unique
+
+    except Exception:
+        import traceback; traceback.print_exc()
+        return []
+
+
 # ── Semantic Recovery ──────────────────────────────────────────────────────────
 
 def _load_skill_context() -> str:
@@ -322,8 +529,12 @@ def _progress(job_id: str, pct: int, step: str):
 
 def _process_job(job_id: str, file_path: str):
     try:
-        _progress(job_id, 5, "Parsing file…")
-        names = parse_file(file_path, jobs, job_id)
+        _progress(job_id, 5, "Parsing file with Claude…")
+        names = _parse_file_with_claude(file_path)
+        if not names:
+            # Fallback to processor.py if Claude parsing fails
+            _progress(job_id, 8, "Claude parsing failed — falling back to processor.py…")
+            names = parse_file(file_path, jobs, job_id)
         if not names:
             raise ValueError("No test names could be extracted.")
 
