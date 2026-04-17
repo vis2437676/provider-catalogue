@@ -444,6 +444,9 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
 .btn-sm-sec:hover{background:var(--surface-gray)}
 .btn-sm-pri{padding:8px 20px;border-radius:999px;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
 .btn-sm-pri:hover{background:var(--primary-hover)}
+.dept-toggle-btn{padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center}
+.dept-toggle-btn:hover{border-color:var(--primary);color:var(--primary)}
+.dept-toggle-btn.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
 
 /* ── Toast ── */
 #toast{
@@ -648,12 +651,12 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <span class="filter-lbl">Status</span>
       <button class="fchip active" data-status="all" onclick="setStatusFilter('all',this)">All <span class="fchip-n">0</span></button>
       <button class="fchip" data-status="matched" onclick="setStatusFilter('matched',this)">Matched <span class="fchip-n">0</span></button>
-      <button class="fchip" data-status="confirmed" onclick="setStatusFilter('confirmed',this)">Confirmed <span class="fchip-n">0</span></button>
       <button class="fchip" data-status="unmatched" onclick="setStatusFilter('unmatched',this)">Unmatched <span class="fchip-n">0</span></button>
+      <div class="filter-div" style="height:22px"></div>
+      <span class="filter-lbl">Actions</span>
+      <button class="fchip" data-status="confirmed" onclick="setStatusFilter('confirmed',this)">Approved <span class="fchip-n">0</span></button>
       <button class="fchip" data-status="rejected" onclick="setStatusFilter('rejected',this)">Rejected <span class="fchip-n">0</span></button>
-      <button class="fchip" data-status="skipped" onclick="setStatusFilter('skipped',this)">Skipped <span class="fchip-n">0</span></button>
-      <button class="fchip" data-status="unknown" onclick="setStatusFilter('unknown',this)">Unknown <span class="fchip-n">0</span></button>
-      <div class="filter-div"></div>
+      <div class="filter-div" style="height:22px"></div>
       <span class="filter-lbl">Dept</span>
       <button class="fchip" data-group="dept" onclick="setDeptFilter('radiology',this)">
         <span style="width:7px;height:7px;border-radius:50%;background:#3B82F6;display:inline-block"></span>Radiology
@@ -714,6 +717,17 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       </div>
       <div class="rm-field"><div class="rm-label">Match Type</div><div class="rm-val" id="rm-match"></div></div>
       <div class="rm-field full"><div class="rm-label">Status</div><span class="stat" id="rm-status"></span></div>
+      <div class="rm-field full">
+        <div class="rm-label">Department</div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button id="rm-dept-path" class="dept-toggle-btn" onclick="setModalDept('pathology')">
+            <span style="width:7px;height:7px;border-radius:50%;background:#10B981;display:inline-block;margin-right:5px"></span>Pathology
+          </button>
+          <button id="rm-dept-rad" class="dept-toggle-btn" onclick="setModalDept('radiology')">
+            <span style="width:7px;height:7px;border-radius:50%;background:#3B82F6;display:inline-block;margin-right:5px"></span>Radiology
+          </button>
+        </div>
+      </div>
       <div class="rm-field full"><div class="rm-label">Confidence Reasoning</div><div class="explain-box" id="rm-explain"></div></div>
     </div>
     <div class="rm-footer">
@@ -1071,9 +1085,14 @@ function rejectAction(cardId){const card=document.getElementById(cardId);if(card
 
 // ── Table helpers ─────────────────────────────────────────────────────────────
 const _RAD=/\b(mri|ct\b|ctscan|x[\s\-]?ray|xray|usg|ultrasound|pet\b|dexa|mammo|fluoroscop|doppler|angio|ecg|eeg|emg|echo|holter|tmt|audiometr|scintig|spect|hrct|fnac|colonoscop|endoscop|bronchoscop|laparoscop|cystoscop|sigmoidoscop|ivp\b|hsg\b)\b/i;
-function _dept(n){return _RAD.test(n||'')?'radiology':'pathology';}
-function _isUnknown(r){return r.status==='unknown'||(r.status==='unmatched'&&(r.confidence||0)===0);}
-function _eff(r){return _isUnknown(r)?'unknown':r.status;}
+// Dept: manual override stored on row takes priority over keyword detection
+function _dept(r){return r._dept||((_RAD.test(r.raw_name||''))?'radiology':'pathology');}
+// Req 6: skipped → rejected, unknown → unmatched. No 'unknown' status exposed in UI.
+function _eff(r){
+  if(r.status==='skipped')return 'rejected';
+  if(r.status==='unknown')return 'unmatched';
+  return r.status;
+}
 function _confReason(r){
   const c=Math.round((r.confidence||0)*100),mt=r.match_type||'';
   if(mt==='exact')return 'Exact match — name found verbatim in master catalogue after normalization.';
@@ -1085,7 +1104,7 @@ function _confReason(r){
   return `Similarity score: ${c}%. Matched via token sort ratio with modality coherence validation.`;
 }
 function _updateChipCounts(){
-  const cnt={all:0,matched:0,unmatched:0,rejected:0,skipped:0,unknown:0,confirmed:0};
+  const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0};
   S.mappings.forEach(r=>{cnt.all++;const s=_eff(r);if(cnt[s]!==undefined)cnt[s]++;});
   document.querySelectorAll('.fchip[data-status]').forEach(ch=>{
     const k=ch.dataset.status,b=ch.querySelector('.fchip-n');
@@ -1100,6 +1119,40 @@ function openTable(){
   document.getElementById('table-overlay').classList.add('open');
   const st=ses?.stats||{};document.getElementById('tbl-stats').innerHTML=statPills(st);
   filterTable();
+  // Load AI suggestions for unmatched rows that have no suggestion yet
+  _loadSuggestions();
+}
+
+// ── AI suggestions for unmatched rows ────────────────────────────────────────
+let _suggLoading=false;
+async function _loadSuggestions(){
+  if(_suggLoading)return;
+  const ses=curSession();if(!ses?.jobId)return;
+  const need=S.mappings.filter(r=>_eff(r)==='unmatched'&&!r.standard_name&&!r.suggested_name);
+  if(!need.length)return;
+  _suggLoading=true;
+  const batch=need.slice(0,40); // cap at 40 per call
+  const list=batch.map((r,i)=>`${i+1}. ${r.raw_name}`).join('\n');
+  try{
+    const resp=await fetch(`${API}/api/chat`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:ses.jobId,
+        message:`You are a medical lab assistant. For each lab test below, suggest the single most likely standard catalogue name from the master catalogue. Respond ONLY with a compact JSON array — no prose, no markdown — like: [{"i":1,"s":"Standard Name"},{"i":2,"s":"Standard Name"},...]\n\nTests:\n${list}`
+      })
+    });
+    const data=await resp.json();
+    const msg=data.message||'';
+    const m=msg.match(/\[[\s\S]*?\]/);
+    if(m){
+      JSON.parse(m[0]).forEach(({i,s})=>{
+        const row=batch[i-1];
+        if(row&&s&&s!=='null'&&s!=='—')row.suggested_name=s;
+      });
+      if(ses)ses.mappings=S.mappings;
+      saveSessions();filterTable();
+    }
+  }catch(e){console.warn('suggestion load:',e);}
+  finally{_suggLoading=false;}
 }
 function closeTable(){document.getElementById('table-overlay').classList.remove('open');}
 
@@ -1119,9 +1172,14 @@ function filterTable(){
   S.filtered=S.mappings.filter(r=>{
     const eff=_eff(r);
     if(S.statusFilter!=='all'&&eff!==S.statusFilter)return false;
-    if(S.deptFilter!=='all'&&_dept(r.raw_name)!==S.deptFilter)return false;
+    if(S.deptFilter!=='all'&&_dept(r)!==S.deptFilter)return false;
     if(q&&!r.raw_name.toLowerCase().includes(q)&&!(r.standard_name||'').toLowerCase().includes(q))return false;
     return true;
+  });
+  // Rejected rows sink to the bottom (req 3)
+  S.filtered.sort((a,b)=>{
+    const ar=_eff(a)==='rejected',br=_eff(b)==='rejected';
+    return ar===br?0:ar?1:-1;
   });
   renderTable();
   _updateChipCounts();
@@ -1133,12 +1191,11 @@ function renderTable(){
   tb.innerHTML=S.filtered.map((r,i)=>{
     const c=Math.round((r.confidence||0)*100);
     const cls=c>=70?'h':c>=40?'m':c===0?'z':'l';
-    const unk=_isUnknown(r);
     const eff=_eff(r);
-    const dept=_dept(r.raw_name);
+    const dept=_dept(r);
     const sel=S.selected.has(r.id);
-    // Row highlight
-    let hl=sel?'row-sel':unk?'hl-purple':eff==='rejected'?'hl-orange':eff==='unmatched'?'hl-red':eff==='skipped'?'hl-yellow':r.highlight==='ai'?'hl-blue':c<70&&c>0&&eff==='matched'?'hl-yellow':'';
+    // Row highlight — rejected sink to bottom with orange, unmatched red
+    let hl=sel?'row-sel':eff==='rejected'?'hl-orange':eff==='unmatched'?'hl-red':r.highlight==='ai'?'hl-blue':c<70&&c>0&&eff==='matched'?'hl-yellow':'';
     // Confidence badge with tooltip
     const confHtml=`<span class="conf-wrap"><span class="conf ${cls}">${c>0?c+'%':'—'}</span><div class="conf-tip">${esc(_confReason(r))}</div></span>`;
     // Standard name cell with redo + clear icons
@@ -1281,11 +1338,21 @@ function openRowModal(id){
   document.getElementById('rm-std').value=r.standard_name||'';
   document.getElementById('rm-conf').textContent=c>0?c+'%':'—';
   document.getElementById('rm-conf-bar').style.cssText=`width:${c}%;background:${bc}`;
-  document.getElementById('rm-match').textContent=r.match_type;
+  document.getElementById('rm-match').textContent=r.match_type||'—';
   document.getElementById('rm-explain').textContent=_confReason(r);
   document.getElementById('rm-status').textContent=eff;
   document.getElementById('rm-status').className='stat '+eff;
+  // Dept toggle
+  const d=_dept(r);
+  document.getElementById('rm-dept-path').classList.toggle('active',d==='pathology');
+  document.getElementById('rm-dept-rad').classList.toggle('active',d==='radiology');
   document.getElementById('row-modal').classList.add('open');
+}
+function setModalDept(dept){
+  if(!S.modalRow)return;
+  S.modalRow._dept=dept;
+  document.getElementById('rm-dept-path').classList.toggle('active',dept==='pathology');
+  document.getElementById('rm-dept-rad').classList.toggle('active',dept==='radiology');
 }
 function closeRowModal(e){
   if(e&&e.target!==document.getElementById('row-modal'))return;
@@ -1296,7 +1363,13 @@ async function saveRowModal(){
   const val=document.getElementById('rm-std').value.trim();
   await inlineEdit(S.modalRow.id,val);
   if(val)await _setRowStatus(S.modalRow.id,'confirmed');
+  // Persist dept override onto the mapping row
+  if(S.modalRow._dept){
+    const idx=S.mappings.findIndex(m=>m.id===S.modalRow.id);
+    if(idx>=0)S.mappings[idx]._dept=S.modalRow._dept;
+  }
   document.getElementById('row-modal').classList.remove('open');
+  filterTable();
 }
 async function modalReject(){
   if(!S.modalRow)return;

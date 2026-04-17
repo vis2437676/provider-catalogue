@@ -730,7 +730,7 @@ class StatusBody(BaseModel):
 async def update_mapping_status(body: StatusBody):
     if body.job_id not in jobs:
         raise HTTPException(404, "Job not found")
-    if body.status not in ("matched", "unmatched", "skipped"):
+    if body.status not in ("matched", "unmatched", "skipped", "confirmed", "rejected"):
         raise HTTPException(400, "Invalid status")
     for row in jobs[body.job_id]["mappings"]:
         if row["id"] == body.row_id:
@@ -748,10 +748,11 @@ async def export(job_id: str):
         raise HTTPException(404, "Job not found")
 
     mappings = job["mappings"]
+    # confirmed + matched → output as matched; rejected/skipped → excluded entirely
     matched_rows   = [{"provider_name": r["raw_name"], "catalogue_name": r["standard_name"],
                         "match_type": r["match_type"], "confidence": r["confidence"]}
-                      for r in mappings if r["status"] == "matched"]
-    unmatched_rows = [{"provider_name": r["raw_name"], "catalogue_name": "",
+                      for r in mappings if r["status"] in ("matched", "confirmed") and r.get("standard_name")]
+    unmatched_rows = [{"provider_name": r["raw_name"], "catalogue_name": r.get("standard_name",""),
                         "match_type": "UNMATCHED", "confidence": 0}
                       for r in mappings if r["status"] == "unmatched"]
 
