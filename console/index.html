@@ -1112,14 +1112,31 @@ function _updateChipCounts(){
   });
 }
 
-function openTable(){
-  const ses=curSession();if(ses?.mappings)S.mappings=ses.mappings;
+async function openTable(){
+  const ses=curSession();
+  // Always try to fetch fresh mappings from server first
+  if(ses?.jobId){
+    try{
+      const r=await fetch(`${API}/api/mappings/${ses.jobId}`);
+      if(r.ok){
+        const data=await r.json();
+        if(data.mappings?.length){
+          // Merge in any local overrides (_dept, suggested_name) from session cache
+          const cache=Object.fromEntries((ses.mappings||[]).map(m=>[m.id,m]));
+          S.mappings=data.mappings.map(m=>({...m,...(cache[m.id]?{_dept:cache[m.id]._dept,suggested_name:cache[m.id].suggested_name}:{})}));
+          if(ses){ses.mappings=S.mappings;if(data.stats)ses.stats=data.stats;}
+          saveSessions();
+        }
+      }
+    }catch(_){}
+  }
+  // Fallback: use session cache if API returned nothing
+  if(!S.mappings.length&&ses?.mappings?.length)S.mappings=ses.mappings;
   if(!S.mappings.length){toast('No mappings yet — run a file first');return;}
   S.selected=new Set();
   document.getElementById('table-overlay').classList.add('open');
   const st=ses?.stats||{};document.getElementById('tbl-stats').innerHTML=statPills(st);
   filterTable();
-  // Load AI suggestions for unmatched rows that have no suggestion yet
   _loadSuggestions();
 }
 
@@ -1425,8 +1442,15 @@ function statPills(s){
 
 loadSessions();
 if(!S.sessions.length)newSession();
-else{S.current=S.sessions[0].id;renderHistory();renderChat();renderProgress();renderFilesList();
-  document.getElementById('chat-title').textContent=curSession()?.name||'Chat';}
+else{
+  S.current=S.sessions[0].id;
+  const _ini=curSession();
+  S.mappings=_ini?.mappings||[];
+  S.progLog=_ini?.progLog||[];
+  renderHistory();renderChat();renderProgress();renderFilesList();
+  document.getElementById('chat-title').textContent=_ini?.name||'Chat';
+  if(_ini?.stats){showWorkspaceResults(_ini.stats);document.getElementById('export-btn').classList.remove('hidden');}
+}
 </script>
 </body>
 </html>
