@@ -94,20 +94,29 @@ Row IDs are UUIDs visible in the mapping data below.
 ### Current mapping snapshot
 """
 
+    def _strip_price(name: str) -> str:
+        """Remove trailing price like '- RS. 5500' or 'Rs 4000' from test names."""
+        return re.sub(r'[\s\-–\t]+R[Ss]\.?\s*[\d,]+\s*$', '', name).strip()
+
     snapshot = ""
     if job_id and job_id in jobs:
         rows = jobs[job_id].get("mappings", [])
         unmatched = [r for r in rows if r["status"] == "unmatched"]
         low_conf   = [r for r in rows if r["status"] == "matched" and r["confidence"] < 0.7]
         stats = jobs[job_id].get("stats", {})
+
+        # Strip prices from raw names before sending to GPT
+        unmatched_clean = [{**r, "raw_name": _strip_price(r["raw_name"])} for r in unmatched]
+        low_conf_clean  = [{**r, "raw_name": _strip_price(r["raw_name"])} for r in low_conf]
+
         snapshot = f"""
 Stats: {stats.get('total',0)} total | {stats.get('matched',0)} matched | {stats.get('unmatched',0)} unmatched | {stats.get('skipped',0)} skipped
 
 Unmatched rows (need fixing):
-{json.dumps(unmatched[:30], indent=2)}
+{json.dumps(unmatched_clean[:30], indent=2)}
 
 Low-confidence rows (<70%):
-{json.dumps(low_conf[:20], indent=2)}
+{json.dumps(low_conf_clean[:20], indent=2)}
 """
 
     return claude_md + persona + snapshot
