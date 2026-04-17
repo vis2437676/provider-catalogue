@@ -23,8 +23,11 @@ if _env_file.exists():
             _k, _v = _line.split("=", 1)
             os.environ.setdefault(_k.strip(), _v.strip())
 
+import sqlite3
 import httpx
+import anthropic as anthropic_sdk
 from openai import OpenAI
+from rapidfuzz import process as fuzz_process, fuzz
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
@@ -45,8 +48,15 @@ from learner import apply_learnings                                          # n
 app = FastAPI(title="Lab Test Mapping Console", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# GPT-4o — chat only
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
+    http_client=httpx.Client(verify=False),
+)
+
+# Claude Sonnet — semantic recovery (follows skill rules + CLAUDE.md)
+claude = anthropic_sdk.Anthropic(
+    api_key=os.environ.get("ANTHROPIC_API_KEY"),
     http_client=httpx.Client(verify=False),
 )
 
@@ -162,6 +172,117 @@ def _rows_to_flat(job: dict) -> list[dict]:
     return rows
 
 
+# ── Semantic Recovery ──────────────────────────────────────────────────────────
+
+def _load_skill_context() -> str:
+    """Load CLAUDE.md + accuracy-loop-guide as Claude's system context."""
+    parts = []
+    claude_md = PROJECT_ROOT / "CLAUDE.md"
+    if claude_md.exists():
+        parts.append(claude_md.read_text(encoding="utf-8"))
+    loop_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "accuracy-loop-guide.md"
+    if loop_guide.exists():
+        parts.append(loop_guide.read_text(encoding="utf-8"))
+    parts.append(
+        "\nYou are now performing the semantic recovery pass (Pass 2 from accuracy-loop-guide.md).\n"
+        "Match each unmatched provider test name to the best catalogue name from the candidates provided.\n"
+        "Return ONLY valid JSON: "
+        '{"matches": [{"id": "...", "catalogue_name": "exact name or null", "confidence": 0.75, "skipped": false}]}\n'
+        "Only include rows you matched. Use null for catalogue_name if no confident match (≥65%) exists.\n"
+        "Set skipped=true for combination tests (A & B / A AND B / A WITH B with two distinct tests)."
+    )
+    return "\n\n---\n\n".join(parts)
+
+
+def _load_catalogue_names() -> list[str]:
+    db_path = PROJECT_ROOT / "refrences" / "master_file.xlsx.db"
+    if not db_path.exists():
+        return []
+    try:
+        conn = sqlite3.connect(str(db_path))
+        rows = conn.execute("SELECT DISTINCT catalogue_name FROM master").fetchall()
+        conn.close()
+        return [r[0] for r in rows if r[0]]
+    except Exception:
+        return []
+
+
+def _get_candidates(name: str, catalogue_names: list[str], n: int = 20) -> list[str]:
+    if not catalogue_names:
+        return []
+    results = fuzz_process.extract(name, catalogue_names, scorer=fuzz.token_sort_ratio, limit=n)
+    return [r[0] for r in results if r[1] >= 35]
+
+
+def _semantic_recovery(unmatched: list[dict]) -> tuple[list[dict], list[dict]]:
+    """
+    Use Claude Sonnet (following skill rules + CLAUDE.md) to semantically
+    recover unmatched rows. GPT-4o is NOT used here.
+    Returns (newly_matched, still_unmatched).
+    """
+    if not unmatched:
+        return [], []
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("⚠️  ANTHROPIC_API_KEY not set — skipping semantic recovery")
+        return [], unmatched
+
+    catalogue_names   = _load_catalogue_names()
+    system_prompt     = _load_skill_context()
+    recovered_matched: list[dict] = []
+    still_unmatched:   list[dict] = []
+
+    BATCH = 25
+    for i in range(0, len(unmatched), BATCH):
+        batch = unmatched[i : i + BATCH]
+
+        rows_payload = []
+        for row in batch:
+            candidates = _get_candidates(row["provider_name"], catalogue_names)
+            rows_payload.append({
+                "id":         row["id"],
+                "name":       row["provider_name"],
+                "candidates": candidates,
+            })
+
+        prompt = (
+            "Apply the semantic recovery pass (accuracy-loop-guide.md Pass 2) to these unmatched rows.\n"
+            "Each row has fuzzy candidates pre-computed. Use your medical knowledge to pick the best match.\n\n"
+            f"{json.dumps(rows_payload, indent=2)}\n\n"
+            'Return JSON: {"matches": [{"id":"...","catalogue_name":"exact name or null","confidence":0.0,"skipped":false}]}'
+        )
+
+        try:
+            resp = claude.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=3000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw  = resp.content[0].text
+            m    = re.search(r'\{[\s\S]*\}', raw)
+            data = json.loads(m.group(0)) if m else {}
+            matches = {m_["id"]: m_ for m_ in data.get("matches", [])}
+        except Exception:
+            import traceback; traceback.print_exc()
+            matches = {}
+
+        for row in batch:
+            m = matches.get(row["id"])
+            if m and m.get("skipped"):
+                row["match_type"] = "SKIPPED"
+                still_unmatched.append(row)
+            elif m and m.get("catalogue_name") and float(m.get("confidence", 0)) >= 0.65:
+                row["catalogue_name"] = m["catalogue_name"]
+                row["confidence"]     = float(m["confidence"])
+                row["match_type"]     = "fuzzy-semantic"
+                recovered_matched.append(row)
+            else:
+                still_unmatched.append(row)
+
+    return recovered_matched, still_unmatched
+
+
 # ── Upload & Process ───────────────────────────────────────────────────────────
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
@@ -227,13 +348,26 @@ def _process_job(job_id: str, file_path: str):
             else:
                 matched.append(item)
 
+        # ── Semantic recovery pass ────────────────────────────────────────────
+        if unmatched:
+            _progress(job_id, 85, f"Semantic recovery for {len(unmatched)} unmatched rows…")
+            recovered, still_unmatched = _semantic_recovery(unmatched)
+            # Move SKIPPED-flagged rows out of still_unmatched
+            new_skipped   = [r for r in still_unmatched if r["match_type"] == "SKIPPED"]
+            still_unmatched = [r for r in still_unmatched if r["match_type"] != "SKIPPED"]
+            matched   += recovered
+            skipped   += new_skipped
+            unmatched  = still_unmatched
+            _progress(job_id, 95, f"Recovered {len(recovered)} rows semantically")
+
         stats = {
-            "total":    len(names),
-            "matched":  len(matched),
+            "total":     len(names),
+            "matched":   len(matched),
             "unmatched": len(unmatched),
-            "skipped":  len(skipped),
-            "exact":    sum(1 for r in results if r.get("Match Type") == "exact"),
-            "fuzzy":    sum(1 for r in results if "fuzzy" in str(r.get("Match Type", ""))),
+            "skipped":   len(skipped),
+            "exact":     sum(1 for r in results if r.get("Match Type") == "exact"),
+            "fuzzy":     sum(1 for r in results if "fuzzy" in str(r.get("Match Type", ""))),
+            "semantic":  sum(1 for r in matched if r.get("match_type") == "fuzzy-semantic"),
         }
 
         jobs[job_id].update({
