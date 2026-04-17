@@ -364,6 +364,27 @@ async def update_mapping(body: UpdateBody):
     raise HTTPException(404, "Row not found")
 
 
+# ── Update row status ──────────────────────────────────────────────────────────
+class StatusBody(BaseModel):
+    job_id: str
+    row_id: str
+    status: str   # "matched" | "unmatched" | "skipped"
+
+
+@app.patch("/api/mapping/status")
+async def update_mapping_status(body: StatusBody):
+    if body.job_id not in jobs:
+        raise HTTPException(404, "Job not found")
+    if body.status not in ("matched", "unmatched", "skipped"):
+        raise HTTPException(400, "Invalid status")
+    for row in jobs[body.job_id]["mappings"]:
+        if row["id"] == body.row_id:
+            row["status"] = body.status
+            row["highlight"] = None
+            return row
+    raise HTTPException(404, "Row not found")
+
+
 # ── Export ─────────────────────────────────────────────────────────────────────
 @app.get("/api/export/{job_id}")
 async def export(job_id: str):

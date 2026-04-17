@@ -368,6 +368,18 @@ tr.hl-blue:hover{background:#152847}
 .edit-cell:focus{border-color:var(--blue);background:#161B27;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
 .edit-cell::placeholder{color:#374151}
 .tbl-empty{text-align:center;padding:40px;color:var(--muted)}
+.btn-skip{
+  padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;
+  background:#450A0A;color:var(--red);border:1px solid #7F1D1D;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.btn-skip:hover{background:#7F1D1D;color:#fff}
+.btn-unskip{
+  padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;
+  background:#1E2736;color:var(--muted);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.btn-unskip:hover{background:#2D3748;color:var(--text)}
 
 /* ── Row modal ───────────────────────────────────────────────────────────── */
 #row-modal{
@@ -1110,7 +1122,12 @@ function renderTable() {
   tb.innerHTML = S.filtered.map((r,i) => {
     const c   = Math.round(r.confidence * 100);
     const cls = c>=70?'h':c>=40?'m':c===0?'z':'l';
-    const hl  = r.highlight==='ai'?'hl-blue':r.status==='unmatched'?'hl-red':c<70&&c>0?'hl-yellow':'';
+    const hl  = r.highlight==='ai'?'hl-blue':r.status==='unmatched'?'hl-red':r.status==='skipped'?'hl-yellow':c<70&&c>0?'hl-yellow':'';
+    const skipBtn = r.status==='unmatched'
+      ? `<button class="btn-skip" onclick="skipRow('${r.id}',event)" title="Skip this row">✕ Skip</button>`
+      : r.status==='skipped'
+      ? `<button class="btn-unskip" onclick="unskipRow('${r.id}',event)" title="Restore to unmatched">↩ Restore</button>`
+      : '';
     return `<tr class="${hl}" onclick="openRowModal('${r.id}')" data-id="${r.id}">
       <td style="color:var(--muted);font-size:10px">${i+1}</td>
       <td style="font-weight:500">${esc(r.raw_name)}</td>
@@ -1119,7 +1136,9 @@ function renderTable() {
           onchange="inlineEdit('${r.id}',this.value)" onfocus="this.select()"/>
       </td>
       <td><span class="conf ${cls}">${c>0?c+'%':'—'}</span></td>
-      <td><span class="stat ${r.status}">${r.status}</span></td>
+      <td onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;padding:8px 14px">
+        <span class="stat ${r.status}">${r.status}</span>${skipBtn}
+      </td>
     </tr>`;
   }).join('');
 }
@@ -1137,6 +1156,31 @@ async function inlineEdit(id, val) {
   if (idx>=0) S.mappings[idx] = {...S.mappings[idx], ...updated};
   if (ses) ses.mappings = S.mappings;
   filterTable(); toast('Saved'); saveSessions();
+}
+
+async function skipRow(id, e) {
+  e && e.stopPropagation();
+  await _setRowStatus(id, 'skipped');
+  toast('Row skipped');
+}
+async function unskipRow(id, e) {
+  e && e.stopPropagation();
+  await _setRowStatus(id, 'unmatched');
+  toast('Row restored to unmatched');
+}
+async function _setRowStatus(id, status) {
+  const ses = curSession();
+  if (!ses?.jobId) return;
+  const r = await fetch(`${API}/api/mapping/status`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ job_id: ses.jobId, row_id: id, status }),
+  });
+  if (!r.ok) return;
+  const updated = await r.json();
+  const idx = S.mappings.findIndex(m => m.id===id);
+  if (idx>=0) S.mappings[idx] = {...S.mappings[idx], ...updated};
+  if (ses) ses.mappings = S.mappings;
+  filterTable(); saveSessions();
 }
 
 // ── Row modal ─────────────────────────────────────────────────────────────────
