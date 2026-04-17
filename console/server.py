@@ -23,6 +23,7 @@ if _env_file.exists():
             _k, _v = _line.split("=", 1)
             os.environ.setdefault(_k.strip(), _v.strip())
 
+import httpx
 from openai import OpenAI
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,7 +45,10 @@ from learner import apply_learnings                                          # n
 app = FastAPI(title="Lab Test Mapping Console", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY"),
+    http_client=httpx.Client(verify=False),
+)
 
 # ── In-memory state ────────────────────────────────────────────────────────────
 jobs: dict[str, dict[str, Any]] = {}          # job_id → job data
