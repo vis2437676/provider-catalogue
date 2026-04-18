@@ -733,12 +733,12 @@ _CATALOGUE_COL_CANDIDATES = [
 ]
 
 
-def _build_master_index(rows: list[tuple], df: pd.DataFrame) -> dict:
+def _build_master_index(rows: list[tuple], df: pd.DataFrame, db_path: str | None = None) -> dict:
     """Build the in-memory matching index from a list of DB rows.
 
-    rows: list of (provider_name, catalogue_name, normalized_provider, normalized_catalogue)
-    df:   the full DataFrame (kept for backward-compat; fallback for any code that
-          calls master_df["Catalogue Test Name"] directly)
+    rows:    list of (provider_name, catalogue_name, normalized_provider, normalized_catalogue)
+    df:      the full DataFrame (kept for backward-compat)
+    db_path: path to the SQLite DB — used to load/write the match result cache
     """
     lookup:        dict[str, str] = {}
     norm_cats:     dict[str, str] = {}
@@ -752,12 +752,43 @@ def _build_master_index(rows: list[tuple], df: pd.DataFrame) -> dict:
         if _cat not in cat_ordered:
             cat_ordered[_cat] = None
 
+    # ── Build token inverted index ────────────────────────────────────────────
+    # Maps each normalized token → set of indices into lookup_keys.
+    # Lets match_names() pre-filter candidates before running fuzzy scoring.
+    lookup_keys = list(lookup.keys())
+    token_index: dict[str, list[int]] = {}
+    for i, key in enumerate(lookup_keys):
+        for tok in key.split():
+            if len(tok) >= 2:
+                token_index.setdefault(tok, []).append(i)
+
+    # ── Load match result cache from SQLite ───────────────────────────────────
+    match_cache: dict[str, dict] = {}
+    if db_path and os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            for norm_in, cat, mt, conf in conn.execute(
+                "SELECT normalized_input, catalogue_name, match_type, confidence "
+                "FROM match_cache"
+            ).fetchall():
+                match_cache[norm_in] = {
+                    "catalogue_name": cat or "",
+                    "match_type":     mt,
+                    "confidence":     conf,
+                }
+            conn.close()
+        except Exception:
+            pass
+
     return {
         "df":            df,
         "lookup":        lookup,
-        "lookup_keys":   list(lookup.keys()),
+        "lookup_keys":   lookup_keys,
         "all_cat_names": list(cat_ordered.keys()),
         "norm_cats":     norm_cats,
+        "token_index":   token_index,
+        "match_cache":   match_cache,
+        "db_path":       db_path,
     }
 
 
@@ -816,7 +847,8 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
                     "Provider Test Name", "Catalogue Test Name",
                     "_normalized_key", "_normalized_catalogue_key",
                 ])
-                return _build_master_index(db_rows, df)
+                conn.close()
+                return _build_master_index(db_rows, df, db_path=db_path)
             conn.close()
     except Exception:
         pass
@@ -873,6 +905,14 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
         """)
         conn.execute("CREATE INDEX idx_norm_prov ON master(normalized_provider)")
         conn.execute("CREATE INDEX idx_norm_cat  ON master(normalized_catalogue)")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS match_cache (
+                normalized_input TEXT PRIMARY KEY,
+                catalogue_name   TEXT,
+                match_type       TEXT NOT NULL,
+                confidence       REAL NOT NULL
+            )
+        """)
         conn.executemany(
             "INSERT INTO master "
             "(provider_name, catalogue_name, normalized_provider, normalized_catalogue) "
@@ -899,7 +939,7 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
         df["_normalized_key"],
         df["_normalized_catalogue_key"],
     ))
-    return _build_master_index(db_rows, df)
+    return _build_master_index(db_rows, df, db_path=db_path)
 
 
 # ── Catalogue-name fallback matching ─────────────────────────────────────────
@@ -1100,81 +1140,121 @@ def match_names(input_names: list[str], master_index: dict) -> list[dict]:
     _lookup_keys   = master_index["lookup_keys"]
     _all_cat_names = master_index["all_cat_names"]
     _norm_cats     = master_index["norm_cats"]
-    results = []
+    _token_index   = master_index.get("token_index", {})
+    _match_cache   = master_index.get("match_cache", {})
+    _db_path       = master_index.get("db_path")
+    results        = []
+    _new_cache: dict[str, dict] = {}   # new entries to persist after the loop
 
-    # ── Batch fuzzy matrix — all provider-name scores computed in one vectorized call ──
-    # This is the only expensive step that must run per input file (depends on input names).
+    # ── Pre-normalize all input names once ───────────────────────────────────
     _pre_norms = [normalize(fix_medical_typos(n)) for n in input_names]
-    _fuzzy_matrix = (
+
+    # ── Identify names NOT in cache — only these need cdist ──────────────────
+    _uncached_indices = [i for i, norm in enumerate(_pre_norms) if norm not in _match_cache]
+
+    # ── Token-index pre-filtering ─────────────────────────────────────────────
+    # For each uncached name, collect candidate lookup_key indices from the token
+    # inverted index.  If ≥1 token matches, restrict cdist to those columns;
+    # otherwise fall through to full cdist (handles completely novel names).
+    def _candidate_cols(norm: str) -> list[int] | None:
+        """Return shortlisted column indices, or None to use all columns."""
+        if not _token_index:
+            return None
+        cols: set[int] = set()
+        for tok in norm.split():
+            if len(tok) >= 2:
+                cols.update(_token_index.get(tok, []))
+        # Only pre-filter when shortlist is meaningfully smaller than full set
+        return sorted(cols) if 0 < len(cols) < len(_lookup_keys) * 0.6 else None
+
+    # ── Batch fuzzy matrix — only for uncached names ──────────────────────────
+    _uncached_norms = [_pre_norms[i] for i in _uncached_indices]
+    _fuzzy_matrix   = (
         process.cdist(
-            _pre_norms,
+            _uncached_norms,
             _lookup_keys,
             scorer=fuzz.token_sort_ratio,
             score_cutoff=FUZZY_THRESHOLD,
             workers=-1,
         )
-        if input_names
+        if _uncached_norms
         else np.empty((0, len(_lookup_keys)), dtype="float32")
     )
+    # Map uncached_indices position → fuzzy_matrix row
+    _uncached_pos = {orig_idx: mat_row for mat_row, orig_idx in enumerate(_uncached_indices)}
 
     for _idx, raw_name in enumerate(input_names):
 
-        # 1. Multi-test package bundle → SKIPPED immediately
+        # 1. Multi-test package bundle → SKIPPED immediately (no caching — structural)
         if is_multi_test_package(raw_name):
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": "",
                              "Match Type": "SKIPPED", "Confidence Score": 0.0})
             continue
 
-        # 1b. Generic X-ray pricing tier with no BFHL catalogue equivalent → UNMATCHED
-        #     immediately, before fuzzy matching can land it on a wrong body-part entry.
+        # 1b. Generic X-ray pricing tier → UNMATCHED immediately (no caching — structural)
         if is_unmatched_tier(raw_name):
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": "",
                              "Match Type": "UNMATCHED", "Confidence Score": 0.0})
             continue
 
-        # 2. Typo correction (applied before all matching passes)
+        # 2. Typo correction
         corrected = fix_medical_typos(raw_name)
+        norm      = _pre_norms[_idx]  # already computed above
 
-        # 3. Deterministic fallback patterns (pricing tiers, combined procedures).
-        #    Applied before normalize() so +, & characters are still present.
+        # ── Cache hit — skip all fuzzy work ──────────────────────────────────
+        if norm in _match_cache:
+            cached = _match_cache[norm]
+            results.append({
+                "Provider Test Name": raw_name,
+                "Catalogue Test Name": cached["catalogue_name"],
+                "Match Type":         cached["match_type"],
+                "Confidence Score":   cached["confidence"],
+            })
+            continue
+
+        # 3. Deterministic fallback patterns (before normalize — +, & still present)
         fallback_cat = check_fallback_patterns(corrected)
         if fallback_cat:
+            _new_cache[norm] = {"catalogue_name": fallback_cat, "match_type": "exact", "confidence": 1.0}
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": fallback_cat,
                              "Match Type": "exact", "Confidence Score": 1.0})
             continue
 
-        norm = normalize(corrected)
-
-        # 4. Known abbreviation direct lookup (resolves ties and short codes)
+        # 4. Known abbreviation direct lookup
         known_cat = KNOWN_ABBREVIATIONS.get(norm)
         if known_cat:
+            _new_cache[norm] = {"catalogue_name": known_cat, "match_type": "exact", "confidence": 0.90}
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": known_cat,
                              "Match Type": "exact", "Confidence Score": 0.90})
             continue
 
-        # 5. Exact match against provider names in master_file
+        # 5. Exact match against provider names
         if norm in lookup:
+            _new_cache[norm] = {"catalogue_name": lookup[norm], "match_type": "exact", "confidence": 1.0}
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": lookup[norm],
                              "Match Type": "exact", "Confidence Score": 1.0})
             continue
 
-        # 6. Fuzzy match against provider names (token_sort_ratio ≥ FUZZY_THRESHOLD).
-        #    Uses pre-computed batch matrix — modality coherence gate applied.
-        _row = _fuzzy_matrix[_idx]
+        # 6. Fuzzy match against provider names — uses pre-computed batch matrix
+        mat_row_idx = _uncached_pos.get(_idx)
         matched_provider = False
-        if float(_row.max()) > 0:
-            _top5_idx = _row.argsort()[::-1][:5]
-            for _j in _top5_idx:
-                _score = float(_row[_j])
-                if _score == 0:
-                    break
-                best_key = _lookup_keys[_j]
-                cat_name = lookup[best_key]
-                if modality_coherent(raw_name, cat_name) and radiology_coherent(raw_name, cat_name):
-                    results.append({"Provider Test Name": raw_name, "Catalogue Test Name": cat_name,
-                                     "Match Type": "fuzzy", "Confidence Score": round(_score / 100, 4)})
-                    matched_provider = True
-                    break
+        if mat_row_idx is not None:
+            _row = _fuzzy_matrix[mat_row_idx]
+            if float(_row.max()) > 0:
+                _top5_idx = _row.argsort()[::-1][:5]
+                for _j in _top5_idx:
+                    _score = float(_row[_j])
+                    if _score == 0:
+                        break
+                    best_key = _lookup_keys[_j]
+                    cat_name = lookup[best_key]
+                    if modality_coherent(raw_name, cat_name) and radiology_coherent(raw_name, cat_name):
+                        conf = round(_score / 100, 4)
+                        _new_cache[norm] = {"catalogue_name": cat_name, "match_type": "fuzzy", "confidence": conf}
+                        results.append({"Provider Test Name": raw_name, "Catalogue Test Name": cat_name,
+                                         "Match Type": "fuzzy", "Confidence Score": conf})
+                        matched_provider = True
+                        break
         if matched_provider:
             continue
 
@@ -1182,15 +1262,33 @@ def match_names(input_names: list[str], master_index: dict) -> list[dict]:
         cat_match = _catalogue_token_match(norm, raw_name, master_df, _all_cat_names, _norm_cats)
         if cat_match:
             cat_name, confidence = cat_match
+            _new_cache[norm] = {"catalogue_name": cat_name, "match_type": "fuzzy-catalogue", "confidence": confidence}
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": cat_name,
                              "Match Type": "fuzzy-catalogue", "Confidence Score": confidence})
         elif is_combination_test(raw_name):
-            # Joins 2+ distinct tests — no single catalogue equivalent by design
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": "",
                              "Match Type": "SKIPPED", "Confidence Score": 0.0})
         else:
+            _new_cache[norm] = {"catalogue_name": "", "match_type": "UNMATCHED", "confidence": 0.0}
             results.append({"Provider Test Name": raw_name, "Catalogue Test Name": "",
                              "Match Type": "UNMATCHED", "Confidence Score": 0.0})
+
+    # ── Persist new cache entries to SQLite ───────────────────────────────────
+    if _new_cache and _db_path:
+        try:
+            conn = sqlite3.connect(_db_path)
+            conn.executemany(
+                "INSERT OR REPLACE INTO match_cache "
+                "(normalized_input, catalogue_name, match_type, confidence) VALUES (?,?,?,?)",
+                [
+                    (k, v["catalogue_name"], v["match_type"], v["confidence"])
+                    for k, v in _new_cache.items()
+                ],
+            )
+            conn.commit()
+            conn.close()
+        except Exception as exc:
+            print(f"WARNING: match cache write failed ({exc})", file=sys.stderr)
 
     return results
 
