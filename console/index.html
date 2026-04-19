@@ -106,6 +106,7 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 #left.collapsed{width:36px}
 #left.collapsed #history-list{display:none}
 #left.collapsed .hl-label-text{display:none}
+#left.collapsed #history-search-wrap{display:none}
 #history-label{
   padding:10px 10px 8px 14px;font-size:11px;font-weight:600;color:var(--muted);
   text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
@@ -116,6 +117,9 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 }
 #sidebar-toggle:hover{background:var(--border);color:var(--text)}
 #left.collapsed #sidebar-toggle{margin:0 auto}
+#history-search-wrap{padding:0 8px 6px;flex-shrink:0}
+#history-search{width:100%;box-sizing:border-box;padding:5px 8px 5px 26px;font-size:12px;border:1px solid var(--border-input);border-radius:var(--radius-xs);outline:none;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23999' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 7px center;color:var(--text)}
+#history-search:focus{border-color:var(--primary)}
 #history-list{flex:1;overflow-y:auto;padding:0 8px 8px}
 .hist-item{
   padding:9px 10px;border-radius:var(--radius);cursor:pointer;margin-bottom:3px;
@@ -136,13 +140,13 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
   padding:12px 18px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surface);
 }
-#chat-title{font-weight:600;font-size:15px;color:var(--text)}
-#chat-meta{font-size:12px;color:var(--muted);margin-top:1px}
-.topbar-actions{display:flex;gap:8px;align-items:center}
+#chat-title{font-weight:700;font-size:18px;color:var(--text);line-height:1.2}
+#chat-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.topbar-actions{display:flex;gap:6px;align-items:center}
 .btn-topbar{
-  display:flex;align-items:center;gap:5px;padding:7px 14px;
+  display:flex;align-items:center;gap:4px;padding:4px 10px;
   border:1px solid var(--border-input);border-radius:var(--radius);background:var(--surface);
-  color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;
+  color:var(--text-secondary);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;
 }
 .btn-topbar:hover{background:var(--surface-gray);border-color:var(--primary);color:var(--primary)}
 .btn-run{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -263,7 +267,7 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 }
 .btn-send:hover{background:var(--primary-hover)}
 .btn-send:disabled{opacity:.4;cursor:default}
-#attach-input{display:none}
+#attach-input{position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0}
 
 #suggestions{padding:6px 16px 0;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
 .chip{
@@ -369,7 +373,7 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .preview-tbl tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .08s}
 .preview-tbl tbody tr:hover{background:var(--primary-light)}
 .preview-tbl tbody td{padding:5px 8px;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pvw-num{width:22px;color:var(--muted);font-size:10px;text-align:right;padding-right:4px!important}
+.pvw-num{width:42px;min-width:42px;color:var(--muted);font-size:10px;text-align:right;padding-right:6px!important;white-space:nowrap;overflow:visible}
 .pvw-raw{color:var(--text-secondary)}
 .pvw-std{color:var(--text);font-weight:500}
 .pvw-empty{color:var(--muted);font-style:italic}
@@ -379,8 +383,11 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .pvw-conf .conf-mid{background:var(--yellow-bg);color:var(--yellow)}
 .pvw-conf .conf-low{background:var(--red-bg);color:var(--red)}
 .pvw-conf .conf-zero{background:var(--surface-gray);color:var(--muted)}
-.pvw-actions{text-align:right;white-space:nowrap}
+.pvw-actions{text-align:right;white-space:nowrap;display:flex;align-items:center;justify-content:flex-end;gap:3px}
 .pvw-actions .btn-confirm,.pvw-actions .btn-rej,.pvw-actions .btn-restore{width:22px;height:22px;font-size:11px}
+.btn-pvw-enlarge{width:22px;height:22px;border:1px solid var(--border-input);border-radius:4px;background:var(--surface);color:var(--primary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
+.btn-pvw-enlarge:hover{background:var(--primary-light);border-color:var(--primary)}
+.master-editable-cell:hover{background:var(--primary-light) !important;outline:1px dashed var(--primary-border)}
 .preview-empty{padding:18px 14px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5;border:1.5px dashed var(--border);margin:10px 12px;border-radius:var(--radius)}
 .preview-footer{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 10px;border-top:1px solid var(--border)}
 .preview-footer-count{font-size:11px;color:var(--muted)}
@@ -399,7 +406,7 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .ws-result-label{font-size:10px;color:var(--muted);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
 
 /* ── Table Overlay ── */
-#table-overlay{position:fixed;inset:0;background:var(--surface);z-index:50;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .15s}
+#table-overlay{position:fixed;inset:0;background:var(--surface);z-index:50;display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transition:opacity .15s}
 #table-overlay.open{opacity:1;pointer-events:all}
 #tbl-topbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0;background:var(--surface)}
 .btn-back{display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border-input);border-radius:var(--radius);background:var(--surface);color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
@@ -414,15 +421,59 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .filter-div{width:1px;height:18px;background:var(--border);margin:0 6px;flex-shrink:0}
 .fchip{padding:4px 10px;border-radius:var(--radius-xs);font-size:12px;font-weight:500;border:1px solid var(--border-input);background:var(--surface);color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;height:32px}
 .fchip:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+/* Missing multi-select dropdown */
+.missing-dd-wrap{position:relative}
+.missing-dd-btn{height:32px;padding:0 10px;border-radius:var(--radius-xs);font-size:12px;font-weight:500;border:1px solid var(--border-input);background:var(--surface);color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.missing-dd-btn:hover,.missing-dd-btn.active{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.missing-dd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border-input);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:200;min-width:170px;padding:6px 0}
+.missing-dd-panel.open{display:block}
+.missing-dd-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-secondary);transition:background .1s}
+.missing-dd-item:hover{background:var(--primary-light);color:var(--primary)}
+.missing-dd-item input{accent-color:var(--primary);width:13px;height:13px;cursor:pointer}
+/* Table AI Chat Panel */
+#tbl-body-row{display:flex;flex:1;min-height:0;overflow:hidden}
+#tbl-wrapper{flex:1;overflow:auto;min-height:0}
+#tbl-chat-panel{width:0;flex-shrink:0;overflow:hidden;border-left:0 solid var(--border);display:flex;flex-direction:column;transition:width .2s,border-width .2s;background:var(--surface)}
+#tbl-chat-panel.open{width:340px;border-left-width:1px}
+#tbl-chat-hdr{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;background:var(--surface-gray)}
+#tbl-chat-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.tbl-msg{padding:8px 10px;border-radius:var(--radius);font-size:12px;line-height:1.5;max-width:100%;word-break:break-word}
+.tbl-msg.user{background:var(--primary);color:#fff;align-self:flex-end;border-radius:var(--radius) var(--radius) 2px var(--radius)}
+.tbl-msg.ai{background:var(--surface-gray);color:var(--text);align-self:flex-start;border-radius:var(--radius) var(--radius) var(--radius) 2px}
+.tbl-msg.ai.loading{color:var(--muted);font-style:italic}
+#tbl-chat-input-row{padding:8px 10px;border-top:1px solid var(--border);display:flex;gap:6px;flex-shrink:0}
+#tbl-chat-input{flex:1;resize:none;border:1px solid var(--border-input);border-radius:var(--radius-xs);padding:6px 8px;font-size:12px;outline:none;font-family:inherit;line-height:1.4}
+#tbl-chat-input:focus{border-color:var(--primary)}
+#tbl-chat-send{width:32px;height:32px;border:none;background:var(--primary);color:#fff;border-radius:var(--radius-xs);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;align-self:flex-end}
+#tbl-chat-send:hover{background:var(--primary-hover)}
+.btn-tbl-chat{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius);border:1px solid var(--primary);background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-tbl-chat:hover,.btn-tbl-chat.active{background:var(--primary);color:#fff}
+/* Chat tabs */
+.tbl-chat-tab{flex:1;padding:7px 0;font-size:12px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;color:var(--muted);transition:all .15s}
+.tbl-chat-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.tbl-tab-pane{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0}
+/* Markdown table in chat */
+.tbl-msg table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px}
+.tbl-msg table th{background:var(--primary);color:#fff;padding:4px 7px;text-align:left;white-space:nowrap}
+.tbl-msg table td{padding:4px 7px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word}
+.tbl-msg table tr:nth-child(even) td{background:rgba(0,93,172,.04)}
+/* History pane */
+.history-entry{margin-bottom:12px}
+.history-entry-hdr{font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.history-entry-hdr time{font-weight:400;color:var(--muted);font-size:10px}
+.history-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.history-tbl th{background:var(--surface-gray);padding:3px 7px;text-align:left;font-weight:600;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+.history-tbl td{padding:3px 7px;border-bottom:1px solid var(--border-divider);word-break:break-word}
+.history-tbl td:nth-child(2){color:var(--primary);font-style:italic}
 .fchip.active{color:#fff;border-color:transparent}
-.fchip[data-status="all"].active{background:var(--primary)}
-.fchip[data-status="matched"].active{background:var(--green)}
-.fchip[data-status="unmatched"].active{background:var(--red)}
-.fchip[data-status="rejected"].active{background:#EA580C}
+.fchip[data-status="all"].active,.fchip[data-pvw-status="all"].active{background:var(--primary)}
+.fchip[data-status="matched"].active,.fchip[data-pvw-status="matched"].active{background:var(--green)}
+.fchip[data-status="unmatched"].active,.fchip[data-pvw-status="unmatched"].active{background:var(--red)}
+.fchip[data-status="rejected"].active,.fchip[data-pvw-status="rejected"].active{background:#EA580C}
 .fchip[data-status="skipped"].active{background:var(--yellow)}
 .fchip[data-status="unknown"].active{background:#7C3AED}
 .fchip[data-status="confirmed"].active{background:var(--accent)}
-.fchip[data-group="dept"].active{background:var(--primary)}
+.fchip[data-group="dept"].active,.fchip[data-pvw-dept].active{background:var(--primary)}
 .fchip-n{font-size:10px;font-weight:600;padding:1px 5px;border-radius:var(--radius-xs);background:rgba(0,0,0,.1);min-width:16px;text-align:center}
 .fchip:not(.active) .fchip-n{background:var(--border-divider);color:var(--muted)}
 .tbl-search-row{display:flex;align-items:center;gap:8px}
@@ -442,13 +493,20 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .btn-bulk-clear{background:none;color:var(--muted);border:1px solid var(--border-input)}.btn-bulk-clear:hover{color:var(--text)}
 
 /* Table */
-#tbl-wrapper{flex:1;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{position:sticky;top:0;z-index:5;background:var(--surface-gray);border-bottom:1px solid var(--border-divider);padding:10px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+#tbl-wrapper{flex:1;overflow:auto;min-height:0;min-width:0}
+table{width:max-content;min-width:100%;border-collapse:collapse;font-size:13px}
+.tbl-sticky{position:sticky;background:var(--surface);z-index:4}
+thead .tbl-sticky{background:var(--surface-gray);z-index:6}
+tr:hover .tbl-sticky{background:inherit}
+thead th{position:sticky;top:0;z-index:5;background:var(--surface-gray);border-bottom:1px solid var(--border-divider);padding:8px 10px;text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
 thead th.cb-th{width:36px;padding:0 10px;text-align:center}
 tbody tr{border-bottom:1px solid var(--border-divider);transition:background .08s}
 tbody tr:hover{background:var(--surface-gray)}
-tbody td{padding:9px 14px;vertical-align:middle}
+td.cell-confirmed{background:var(--primary-light)!important}
+td.cell-pending{background:#FFF7ED!important;border-bottom:2px solid #F97316!important}
+tr:hover td.cell-confirmed{background:var(--primary-light)!important}
+tr:hover td.cell-pending{background:#FFF7ED!important;border-bottom:2px solid #F97316!important}
+tbody td{padding:5px 10px;vertical-align:middle}
 tbody td.cb-td{width:36px;padding:0 10px;text-align:center}
 .row-cb{width:14px;height:14px;border-radius:3px;accent-color:var(--primary);cursor:pointer}
 tr.hl-yellow{background:var(--yellow-bg);border-left:3px solid var(--yellow)}
@@ -475,6 +533,15 @@ tr.row-sel{background:var(--primary-light)!important}tr.row-sel:hover{background
 .dept-badge.rad{background:#EFF6FF;color:#3B82F6}
 .dept-badge.path{background:#F0FDF4;color:#10B981}
 .price-cell{font-size:11px;color:var(--text-secondary);white-space:nowrap}
+.editable-cell{display:flex;align-items:center;gap:4px;min-height:22px;position:relative}
+.editable-cell .pencil-btn{opacity:0.35;flex-shrink:0;background:none;border:none;cursor:pointer;padding:1px 3px;border-radius:3px;color:var(--muted);transition:all .15s}
+.editable-cell .pencil-btn:hover{opacity:1;color:var(--accent);background:var(--hover)}
+tr:hover .editable-cell .pencil-btn{opacity:0.7}
+.editable-cell.editing .pencil-btn{display:none}
+.direct-edit-cell{cursor:pointer}
+.direct-edit-cell:hover{background:var(--primary-light);outline:1px dashed var(--primary-border);border-radius:3px}
+.field-input{font-size:11px;border:1px solid var(--accent);border-radius:4px;padding:2px 5px;outline:none;background:var(--surface);color:var(--text);width:100%;min-width:60px}
+.dept-select{font-size:11px;border:1px solid var(--accent);border-radius:4px;padding:2px 4px;outline:none;background:var(--surface);color:var(--text);cursor:pointer;min-width:105px;position:absolute;z-index:20}
 
 /* Confidence tooltip */
 .conf{display:inline-block;padding:3px 8px;border-radius:var(--radius-xs);font-size:11px;font-weight:600}
@@ -496,7 +563,9 @@ tr.row-sel{background:var(--primary-light)!important}tr.row-sel:hover{background
 td:hover .sn-icons,td:focus-within .sn-icons{opacity:1}
 .sn-icon{width:22px;height:22px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--muted);transition:all .12s;flex-shrink:0;padding:0}
 .sn-icon:hover{background:var(--surface-gray);color:var(--primary)}.sn-icon.clr:hover{color:var(--red)}
-.sn-sugg{font-size:11px;color:var(--muted);padding-left:8px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
+.sn-sugg{font-size:11px;color:var(--muted);padding-left:8px;margin-top:2px;white-space:normal;word-break:break-word;font-style:italic}
+.pvw-sn-sugg{font-size:10px;color:var(--yellow);margin-top:3px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:italic;padding:1px 4px;border-radius:3px;transition:all .12s}
+.pvw-sn-sugg:hover{background:var(--yellow-bg);color:#A06000;text-decoration:underline}
 
 /* Action buttons — icon only */
 .act-btns{display:flex;align-items:center;gap:4px;flex-wrap:nowrap}
@@ -534,7 +603,7 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
 #row-modal.open{opacity:1;pointer-events:all}
 .rm-box{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:24px;width:440px;max-width:95vw;box-shadow:var(--shadow-lg);
+  padding:24px;width:700px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);
   transform:translateY(8px);transition:transform .2s;
 }
 #row-modal.open .rm-box{transform:translateY(0)}
@@ -552,6 +621,7 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
 .rm-val{font-size:13px;padding:8px 12px;background:var(--surface-gray);border:1px solid var(--border-input);border-radius:var(--radius);color:var(--text);line-height:1.5}
 .rm-val.edit{background:var(--surface)}
 .rm-val.edit:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,93,172,.08)}
+#rm-master-grid input:focus,#rm-master-grid textarea:focus{outline:none;border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(0,93,172,.08);}
 .conf-bar{height:4px;border-radius:999px;background:var(--border-divider);overflow:hidden;margin-top:5px}
 .conf-bar-fill{height:100%;border-radius:999px}
 .explain-box{background:var(--primary-light);border:1px solid var(--primary-border);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--primary);line-height:1.55}
@@ -607,6 +677,9 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <svg id="sidebar-toggle-icon" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
     </button>
   </div>
+  <div id="history-search-wrap">
+    <input id="history-search" type="text" placeholder="Search chats…" oninput="renderHistory()" autocomplete="off"/>
+  </div>
   <div id="history-list"></div>
 </div>
 
@@ -620,13 +693,17 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <div id="chat-meta">0 messages</div>
     </div>
     <div class="topbar-actions">
-      <button class="btn-topbar" onclick="triggerAttach()" title="Attach catalogue file">
+      <button class="btn-topbar btn-run" onclick="triggerAttach()" title="Attach catalogue file">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Upload
       </button>
-      <button class="btn-topbar btn-run hidden" id="export-btn" onclick="exportFile()">
+      <button class="btn-topbar hidden" id="export-btn" onclick="exportFile()">
         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Export
+      </button>
+      <button class="btn-topbar hidden" id="clear-chat-btn" onclick="clearChat()" title="Clear chat history" style="color:var(--muted);white-space:nowrap">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/></svg>
+        Clear chat
       </button>
     </div>
   </div>
@@ -662,7 +739,7 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg>
     </button>
   </div>
-  <input type="file" id="attach-input" accept=".pdf,.xlsx,.xls,.docx,.doc,.csv" onchange="onFileSelected(this.files[0])"/>
+
 </div>
 
 <!-- RIGHT -->
@@ -698,6 +775,16 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
           <div style="display:flex;align-items:center;gap:6px;background:var(--surface-gray);border:1px solid var(--border-input);border-radius:var(--radius);padding:5px 10px">
             <svg width="12" height="12" fill="none" stroke="var(--muted)" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input id="preview-search" type="text" placeholder="Search tests…" oninput="renderPreviewTable()" style="border:none;outline:none;background:transparent;font-size:12px;color:var(--text);width:100%;font-family:inherit"/>
+          </div>
+          <!-- Filter chips for preview panel -->
+          <div id="pvw-filter-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding-top:6px">
+            <button class="fchip active" data-pvw-status="all" onclick="setPvwStatusFilter('all',this)" style="font-size:11px;height:26px;padding:2px 8px">All <span class="fchip-n pvw-n-all">0</span></button>
+            <button class="fchip" data-pvw-status="matched" onclick="setPvwStatusFilter('matched',this)" style="font-size:11px;height:26px;padding:2px 8px">Matched <span class="fchip-n pvw-n-matched">0</span></button>
+            <button class="fchip" data-pvw-status="unmatched" onclick="setPvwStatusFilter('unmatched',this)" style="font-size:11px;height:26px;padding:2px 8px">Unmatched <span class="fchip-n pvw-n-unmatched">0</span></button>
+            <button class="fchip" data-pvw-status="rejected" onclick="setPvwStatusFilter('rejected',this)" style="font-size:11px;height:26px;padding:2px 8px">Rejected <span class="fchip-n pvw-n-rejected">0</span></button>
+            <div style="width:1px;height:16px;background:var(--border-divider);margin:0 2px"></div>
+            <button class="fchip" data-pvw-dept="radiology" onclick="setPvwDeptFilter('radiology',this)" style="font-size:11px;height:26px;padding:2px 8px"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;display:inline-block"></span>Radiology</button>
+            <button class="fchip" data-pvw-dept="pathology" onclick="setPvwDeptFilter('pathology',this)" style="font-size:11px;height:26px;padding:2px 8px"><span style="width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block"></span>Pathology</button>
           </div>
         </div>
         <div id="preview-table-container">
@@ -801,6 +888,10 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <button class="fchip" data-status="matched" onclick="setStatusFilter('matched',this)">Matched <span class="fchip-n">0</span></button>
       <button class="fchip" data-status="unmatched" onclick="setStatusFilter('unmatched',this)">Unmatched <span class="fchip-n">0</span></button>
       <button class="fchip" data-status="rejected" onclick="setStatusFilter('rejected',this)">Rejected <span class="fchip-n">0</span></button>
+      <button class="fchip" id="ai-filled-chip" onclick="toggleAiFilled(this)" style="border-color:var(--primary);color:var(--primary)">
+        <svg width="9" height="9" fill="var(--primary)" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        AI Filled <span id="ai-filled-n" style="font-size:10px;opacity:.7">0</span>
+      </button>
       <div class="filter-div" style="height:22px"></div>
       <span class="filter-lbl">Dept</span>
       <button class="fchip" data-group="dept" onclick="setDeptFilter('radiology',this)">
@@ -809,9 +900,34 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <button class="fchip" data-group="dept" onclick="setDeptFilter('pathology',this)">
         <span style="width:7px;height:7px;border-radius:50%;background:#10B981;display:inline-block"></span>Pathology
       </button>
+      <div class="filter-div" style="height:22px"></div>
+      <span class="filter-lbl">Missing</span>
+      <div class="missing-dd-wrap" id="missing-dd-wrap">
+        <button class="missing-dd-btn" id="missing-dd-btn" onclick="toggleMissingDd(event)">
+          <span id="missing-dd-label">— All —</span>
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="missing-dd-panel" id="missing-dd-panel">
+          <label class="missing-dd-item"><input type="checkbox" value="description" onchange="toggleMissingField(this)"><span>Overview</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="report_tat" onchange="toggleMissingField(this)"><span>TAT</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="loinc_id" onchange="toggleMissingField(this)"><span>LOINC ID</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="lab_requirement" onchange="toggleMissingField(this)"><span>Services Offered</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="mrp" onchange="toggleMissingField(this)"><span>Partner MRP</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="fasting_required" onchange="toggleMissingField(this)"><span>Fasting Required</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="fasting_hours" onchange="toggleMissingField(this)"><span>Fasting Hours</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="precautions" onchange="toggleMissingField(this)"><span>Precautions</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="age_range" onchange="toggleMissingField(this)"><span>Age Range</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="alias" onchange="toggleMissingField(this)"><span>Alias</span></label>
+          <label class="missing-dd-item"><input type="checkbox" value="tags" onchange="toggleMissingField(this)"><span>Tags</span></label>
+        </div>
+      </div>
     </div>
     <div class="tbl-search-row">
       <input id="tbl-search" type="text" placeholder="Search tests…" oninput="filterTable()"/>
+      <button class="btn-tbl-chat" id="btn-tbl-chat" onclick="toggleTblChat()" title="AI Chat — fill missing fields">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        AI Chat
+      </button>
       <button class="btn-export-tbl" onclick="exportFile()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Export xlsx
@@ -827,22 +943,47 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
     <button class="btn-bulk btn-bulk-clear" onclick="clearSelection()">Clear selection</button>
   </div>
 
+  <div id="tbl-body-row">
   <div id="tbl-wrapper">
     <table id="mapping-table">
-      <thead><tr>
-        <th class="cb-th"><input type="checkbox" class="row-cb" id="master-cb" onchange="toggleSelectAll(this.checked)"/></th>
-        <th style="width:32px">#</th>
-        <th>Raw Test Name</th>
-        <th style="width:60px">Price</th>
-        <th style="width:66px">Dept</th>
-        <th style="width:34%">Standard Name</th>
+      <thead><tr id="tbl-head-row">
+        <th class="cb-th tbl-sticky" style="left:0;z-index:6"><input type="checkbox" class="row-cb" id="master-cb" onchange="toggleSelectAll(this.checked)"/></th>
+        <th class="tbl-sticky" style="left:34px;z-index:6;width:54px;min-width:54px;max-width:54px;text-align:right;padding:6px 8px 6px 2px;white-space:nowrap">SR No.</th>
+        <th class="tbl-sticky" style="left:88px;z-index:6;min-width:200px">Raw Test Name</th>
+        <th style="width:70px">Price</th>
+        <th style="width:100px">Dept</th>
+        <th style="min-width:220px">Standard Name</th>
         <th style="width:90px">Confidence</th>
         <th style="width:108px">Status</th>
-        <th style="width:160px">Actions</th>
+        <th style="width:130px">Actions</th>
       </tr></thead>
       <tbody id="tbl-body"></tbody>
     </table>
   </div>
+
+  <!-- Table AI Chat Panel -->
+  <div id="tbl-chat-panel">
+    <div id="tbl-chat-hdr">
+      <div style="display:flex;align-items:center;gap:0;flex:1">
+        <button class="tbl-chat-tab active" id="tab-chat" onclick="switchTblTab('chat')">Chat</button>
+        <button class="tbl-chat-tab" id="tab-history" onclick="switchTblTab('history')">Changes <span id="tbl-history-badge" style="display:none;background:var(--primary);color:#fff;border-radius:10px;padding:0 5px;font-size:10px;margin-left:3px">0</span></button>
+      </div>
+      <span id="tbl-chat-ctx" style="font-size:10px;color:var(--muted);margin-left:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px"></span>
+      <button onclick="toggleTblChat()" style="margin-left:6px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;flex-shrink:0">×</button>
+    </div>
+    <div id="tbl-chat-msgs" class="tbl-tab-pane"></div>
+    <div id="tbl-history-pane" class="tbl-tab-pane" style="display:none;flex:1;overflow-y:auto;padding:10px 12px;font-size:11px"></div>
+    <div style="padding:6px 10px 0;display:flex;gap:5px;flex-shrink:0">
+      <button onclick="quickFillAll()" id="quick-fill-btn" style="flex:1;padding:5px 8px;font-size:11px;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-xs);cursor:pointer;white-space:nowrap">⚡ Fill all missing fields</button>
+    </div>
+    <div id="tbl-chat-input-row">
+      <textarea id="tbl-chat-input" placeholder="Ask AI to fill missing fields for filtered rows…" rows="2" onkeydown="tblChatKeydown(event)"></textarea>
+      <button id="tbl-chat-send" onclick="sendTblChat()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+  </div><!-- end tbl-body-row -->
 </div>
 
 <!-- ROW MODAL -->
@@ -857,8 +998,8 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
     <div class="rm-fields">
       <div class="rm-field full"><div class="rm-label">Raw Test Name</div><div class="rm-val" id="rm-raw"></div></div>
       <div class="rm-field full"><div class="rm-label">Standard Name</div><input class="rm-val edit" id="rm-std" type="text" placeholder="Enter catalogue name…"/></div>
-      <div class="rm-field"><div class="rm-label">Price (from file)</div><div class="rm-val" id="rm-price" style="font-size:13px;color:var(--text-secondary)"></div></div>
-      <div class="rm-field"><div class="rm-label">Lab Type</div><div class="rm-val" id="rm-labtype"></div></div>
+      <div class="rm-field"><div class="rm-label">Price (from file)</div><input class="rm-val edit" id="rm-price" type="number" min="0" placeholder="Enter price…" style="font-size:13px"/></div>
+      <div class="rm-field"><div class="rm-label">Lab Type</div><select class="rm-val edit" id="rm-labtype"><option value="Pathology">Pathology</option><option value="Radiology">Radiology</option></select></div>
       <div class="rm-field">
         <div class="rm-label">Confidence</div>
         <div class="rm-val" id="rm-conf"></div>
@@ -878,6 +1019,10 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
         </div>
       </div>
       <div class="rm-field full"><div class="rm-label">Confidence Reasoning</div><div class="explain-box" id="rm-explain"></div></div>
+      <div class="rm-field full" id="rm-master-section" style="display:none">
+        <div class="rm-label" style="margin-bottom:8px;font-size:12px;font-weight:700;color:var(--primary);border-top:1px solid var(--border);padding-top:12px;margin-top:4px">Output Format Details (from Master)</div>
+        <div id="rm-master-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;font-size:12px;padding:4px 0 4px"></div>
+      </div>
     </div>
     <div class="rm-footer">
       <button class="btn-sm-sec" onclick="closeRowModal()">Cancel</button>
@@ -896,9 +1041,34 @@ let S = {
   sessions:[],current:null,pendingFile:null,
   mappings:[],filtered:[],filesTab:'input',
   inputFiles:[],outputFiles:[],aiLoading:false,progLog:[],modalRow:null,
-  statusFilter:'all',deptFilter:'all',selected:new Set(),
+  statusFilter:'all',deptFilter:'all',missingFilter:new Set(),aiFilled:false,selected:new Set(),
+  tblChangeHistory:[],
   nameIndex: new Map(),  // normalized_raw_name → index in S.mappings (O(1) lookup)
+  masterDetails: {},    // catalogue_name → detail row from master_details DB
 };
+// Output Format column definitions for the table
+const MASTER_COLS=[
+  {key:'provider_item_name',label:'Provider Slug',       width:'160px'},
+  {key:'loinc_id',        label:'LOINC ID',             width:'90px'},
+  {key:'lab_requirement', label:'Services Offered',      width:'100px'},
+  {key:'entity_type',     label:'Catalogue Type',        width:'100px'},
+  {key:'mrp',             label:'Partner MRP (₹)',       width:'100px'},
+  {key:'discounted_price',label:'Discounted Price (₹)',  width:'120px'},
+  {key:'display_mrp',     label:'Display MRP (₹)',       width:'100px'},
+  {key:'collection_type', label:'Lab Visit',             width:'80px'},
+  {key:'home_collection', label:'Home Sample',           width:'100px'},
+  {key:'fasting_required',label:'Fasting Required',      width:'110px'},
+  {key:'fasting_hours',   label:'Fasting Hours',         width:'160px'},
+  {key:'age_range',       label:'Age Range',             width:'90px'},
+  {key:'gender',          label:'Gender',                width:'70px'},
+  {key:'minimum_patient', label:'Min. Patients',         width:'90px'},
+  {key:'report_tat',      label:'TAT (Hrs)',             width:'70px'},
+  {key:'alias',           label:'Alias',                 width:'140px'},
+  {key:'tags',            label:'Tags',                  width:'120px'},
+  {key:'prescription_required',label:'Rx Required',      width:'90px'},
+  {key:'precautions',     label:'Precautions',           width:'220px', wrap:true},
+  {key:'description',     label:'Overview',              width:'180px', truncate:true},
+];
 
 // Rebuild name index whenever S.mappings changes
 function _rebuildNameIndex(){
@@ -946,7 +1116,7 @@ function newSession(){
   const _fb=document.getElementById('ws-files-body');const _fc=document.getElementById('chev-files');
   if(_fb)_fb.classList.add('ws-collapsed');if(_fc)_fc.classList.add('collapsed');
   saveSessions();renderHistory();renderChat();renderProgress();renderFilesList();renderPreviewTable();
-  document.getElementById('export-btn').classList.add('hidden');
+  document.getElementById('export-btn').classList.add('hidden');document.getElementById('clear-chat-btn').classList.add('hidden');
   document.getElementById('chat-title').textContent='New Chat';
   document.getElementById('chat-meta').textContent='0 messages';
 }
@@ -956,17 +1126,20 @@ function switchSession(id){
   const ses=curSession();
   S.mappings=_loadMappings(ses?.jobId);S.progLog=ses?.progLog||[];_rebuildNameIndex();
   renderHistory();renderChat();renderProgress();renderFilesList();renderPreviewTable();
-  if(ses?.stats){document.getElementById('export-btn').classList.remove('hidden');}
+  if(ses?.stats){document.getElementById('export-btn').classList.remove('hidden');document.getElementById('clear-chat-btn').classList.remove('hidden');_loadSuggestions();}
   document.getElementById('chat-title').textContent=ses?.name||'Chat';
   const cnt=(ses?.messages||[]).length;
   document.getElementById('chat-meta').textContent=`${cnt} message${cnt!==1?'s':''}`;
-  if(ses?.stats)document.getElementById('export-btn').classList.remove('hidden');
+  if(ses?.stats)document.getElementById('export-btn').classList.remove('hidden');document.getElementById('clear-chat-btn').classList.remove('hidden');
 }
 
 function renderHistory(){
   const el=document.getElementById('history-list');
   if(!S.sessions.length){el.innerHTML='<div style="padding:12px 8px;font-size:12px;color:var(--muted)">No history yet</div>';return;}
-  el.innerHTML=S.sessions.map(s=>{
+  const q=(document.getElementById('history-search')?.value||'').toLowerCase().trim();
+  const filtered=q?S.sessions.filter(s=>(s.name||'').toLowerCase().includes(q)):S.sessions;
+  if(!filtered.length){el.innerHTML='<div style="padding:12px 8px;font-size:12px;color:var(--muted)">No matching chats</div>';return;}
+  el.innerHTML=filtered.map(s=>{
     const last=(s.messages||[]).slice(-1)[0];
     const sub=last?truncate(last.content,42):'No messages';
     return `<div class="hist-item${s.id===S.current?' active':''}" onclick="switchSession('${s.id}')">
@@ -1048,23 +1221,44 @@ function pushMsg(m){
   saveSessions();
 }
 
-function triggerAttach(){document.getElementById('attach-input').click();}
-function onFileSelected(file){
-  if(!file)return;
+function triggerAttach(){
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='.pdf,.xlsx,.xls,.docx,.doc,.csv';
+  inp.multiple=true;
+  inp.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0';
+  inp.onchange=function(){if(inp.files&&inp.files.length)onFilesSelected(inp.files);document.body.removeChild(inp);};
+  document.body.appendChild(inp);
+  inp.click();
+}
+function onFilesSelected(fileList){
+  if(!fileList||!fileList.length)return;
+  document.getElementById('attach-input').value='';
+  [...fileList].forEach(f=>_queueFile(f));
+}
+function onFileSelected(file){if(file)_queueFile(file);}  // legacy single-file path
+const _fileQueue=[];let _fileProcessing=false;
+function _queueFile(file){
+  _fileQueue.push(file);
+  if(!_fileProcessing)_processNextFile();
+}
+async function _processNextFile(){
+  if(!_fileQueue.length){_fileProcessing=false;return;}
+  _fileProcessing=true;
+  const file=_fileQueue.shift();
   if(!S.current)newSession();
   S.pendingFile={file,name:file.name,size:fmt(file.size)};
-  document.getElementById('attach-input').value='';
   const ses=curSession();
   const label=file.name.replace(/\.[^.]+$/,'');
-  if(ses){ses.name=label;document.getElementById('chat-title').textContent=label;}
+  if(ses&&_fileQueue.length===0){ses.name=label;document.getElementById('chat-title').textContent=label;}
   pushMsg({role:'user',type:'file',filename:file.name,filesize:fmt(file.size),content:`Attached: ${file.name}`});
   addInputFile(file.name,fmt(file.size));renderHistory();
-  // Auto-process immediately — no Run button needed
-  runProcessing();
+  await runProcessing();
+  _processNextFile();
 }
 function onDragOver(e){e.preventDefault();document.getElementById('drop-overlay').classList.add('show');}
 function onDragLeave(e){if(!document.getElementById('center').contains(e.relatedTarget))document.getElementById('drop-overlay').classList.remove('show');}
-function onDrop(e){e.preventDefault();document.getElementById('drop-overlay').classList.remove('show');const f=e.dataTransfer.files[0];if(f)onFileSelected(f);}
+function onDrop(e){e.preventDefault();document.getElementById('drop-overlay').classList.remove('show');[...e.dataTransfer.files].forEach(f=>_queueFile(f));}
 
 async function runProcessing(){
   if(!S.pendingFile||!S.current)return;
@@ -1136,11 +1330,14 @@ async function pollProgress(jobId,progId){
       es.close();updateProgressLog(jobId,'done');addProgressLog('Generating output…','done');
       const r=await fetch(`${API}/api/mappings/${jobId}`);
       const data=await r.json();
-      S.mappings=data.mappings;
+      // Restore any local overrides that may exist from previous session
+      const _prevCache=Object.fromEntries(_loadMappings(jobId).map(m=>[m.id,m]));
+      S.mappings=data.mappings.map(m=>({...m,...(_prevCache[m.id]?{_dept:_prevCache[m.id]._dept,suggested_name:_prevCache[m.id].suggested_name,_masterOverrides:_prevCache[m.id]._masterOverrides}:{})}));
       _rebuildNameIndex();
       const ses=curSession();if(ses){ses.stats=data.stats;}
       _saveMappings(ses?.jobId,S.mappings);
       renderPreviewTable();
+      _loadSuggestions();
       // Remove live progress bubble, show result
       _removeProgBubble(progId);
       pushMsg({role:'assistant',type:'result',stats:data.stats,content:'Processing complete'});
@@ -1152,7 +1349,7 @@ async function pollProgress(jobId,progId){
       addOutputFile(ses?.name||'output',data.filename||'output');
       renderProgress();saveSessions();
       document.getElementById('tbl-stats').innerHTML=statPills(data.stats);
-      document.getElementById('export-btn').classList.remove('hidden');
+      document.getElementById('export-btn').classList.remove('hidden');document.getElementById('clear-chat-btn').classList.remove('hidden');
     }else if(d.status==='error'){
       es.close();updateProgressLog(jobId,'error');
       _removeProgBubble(progId);
@@ -1231,6 +1428,19 @@ function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessag
 function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
 function useChip(el){document.getElementById('chat-input').value=el.textContent;sendMessage();}
 
+async function clearChat(){
+  const ses=curSession();
+  if(!ses)return;
+  if(!confirm('Clear chat history for this job? Mappings will not be affected.'))return;
+  ses.messages=[];
+  saveSessions();
+  renderChat();
+  if(ses.jobId){
+    fetch(`${API}/api/clear-chat/${ses.jobId}`,{method:'POST'}).catch(()=>{});
+  }
+  toast('Chat cleared');
+}
+
 async function sendMessage(){
   if(S.aiLoading)return;
   const inp=document.getElementById('chat-input');
@@ -1253,6 +1463,14 @@ async function sendMessage(){
     // Auto-apply any action block immediately — apply locally first so table always updates
     let appliedInfo=null;
     if(data.action&&data.action.type==='update_mappings'){
+      // Fix model encoding dept change as catalogue_name with "Pathology X" or "Radiology X"
+      (data.action.changes||[]).forEach(ch=>{
+        if(ch.field==='catalogue_name'){
+          const v=String(ch.value||'').trim();
+          if(/^pathology\s+/i.test(v)){ch.field='lab_type';ch.value='Pathology';}
+          else if(/^radiology\s+/i.test(v)){ch.field='lab_type';ch.value='Radiology';}
+        }
+      });
       const changes=data.action.changes||[];
       let count=0;
       for(const ch of changes){
@@ -1264,29 +1482,46 @@ async function sendMessage(){
           if(S.nameIndex.has(needle)){
             idx=S.nameIndex.get(needle);
           } else {
-            // Fuzzy fallback: token overlap (handles typos like "Comple" vs "Complete")
+            // Fuzzy fallback: token overlap against raw_name AND standard_name
             let bestScore=0,bestIdx=-1;
             const needleToks=needle.split(/\s+/);
             S.mappings.forEach((m,i)=>{
-              const hayToks=(m.raw_name||'').replace(/\s+/g,' ').toLowerCase().trim().split(/\s+/);
-              const matches=needleToks.filter(t=>hayToks.some(h=>h.includes(t)||t.includes(h))).length;
-              const score=matches/(Math.max(needleToks.length,hayToks.length)||1);
+              // Try raw_name match
+              const rawToks=(m.raw_name||'').replace(/\s+/g,' ').toLowerCase().trim().split(/\s+/);
+              const rawMatches=needleToks.filter(t=>rawToks.some(h=>h.includes(t)||t.includes(h))).length;
+              const rawScore=rawMatches/(Math.max(needleToks.length,rawToks.length)||1);
+              // Try standard_name match (user may refer to standard name in chat)
+              const snToks=(m.standard_name||'').replace(/\s+/g,' ').toLowerCase().trim().split(/\s+/);
+              const snMatches=needleToks.filter(t=>snToks.some(h=>h.includes(t)||t.includes(h))).length;
+              const snScore=snMatches/(Math.max(needleToks.length,snToks.length)||1);
+              const score=Math.max(rawScore,snScore);
               if(score>bestScore){bestScore=score;bestIdx=i;}
             });
-            if(bestScore>=0.6)idx=bestIdx;
+            if(bestScore>=0.55)idx=bestIdx;
           }
         } else {
           idx=S.mappings.findIndex(m=>m.id===ch.row_id);
         }
         if(idx<0)continue;
-        if(ch.field==='catalogue_name'){S.mappings[idx].standard_name=ch.value;S.mappings[idx].status='matched';count++;}
-        else if(ch.field==='status'){S.mappings[idx].status=ch.value;count++;}
+        const fld=ch.field||'';
+        if(fld==='catalogue_name'){S.mappings[idx].standard_name=ch.value;S.mappings[idx].status='matched';count++;}
+        else if(fld==='status'){S.mappings[idx].status=ch.value;count++;}
+        else if(fld==='price'){S.mappings[idx].price=String(ch.value||'').trim();count++;}
+        else if(fld==='lab_type'||fld==='department'||fld==='dept'){
+          let v=String(ch.value||'').trim();
+          if(/^rad/i.test(v))v='Radiology'; else if(/^path/i.test(v))v='Pathology';
+          S.mappings[idx].lab_type=v;
+          S.mappings[idx]._dept=v.toLowerCase();
+          console.log('[DEPT] idx=',idx,'raw=',S.mappings[idx].raw_name,'_dept=',S.mappings[idx]._dept,'lab_type=',S.mappings[idx].lab_type);
+          count++;
+        }
         S.mappings[idx].highlight='ai';
       }
       if(count>0){
+        _rebuildNameIndex();
         _saveMappings(ses?.jobId,S.mappings);
         renderPreviewTable();
-        if(document.getElementById('table-overlay').classList.contains('open'))filterTable();
+        filterTable();
         appliedInfo=count;
         saveSessions();
       } else if(changes.length>0){
@@ -1354,16 +1589,20 @@ function _confReason(r){
   if(mt==='fuzzy'&&c>=65)return `Moderate fuzzy match (${c}%). Passed similarity threshold with modality coherence check.`;
   if(mt==='fuzzy-catalogue')return `Catalogue-name match (${c}%). Matched directly against standard catalogue names — not provider-name index.`;
   if(mt==='fuzzy-semantic')return `Semantic recovery (${c}%). Matched after abbreviation expansion, typo correction, or generic fallback rules.`;
+  if(mt==='correction')return `Applied from your previous correction. This mapping was saved when you edited it in a prior job.`;
   if(c===0)return 'No match found. Name could not be mapped to any catalogue entry — please enter manually.';
   return `Similarity score: ${c}%. Matched via token sort ratio with modality coherence validation.`;
 }
 function _updateChipCounts(){
-  const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0};
-  S.mappings.forEach(r=>{cnt.all++;const s=_eff(r);if(cnt[s]!==undefined)cnt[s]++;});
+  const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0,skipped:0};
+  S.mappings.forEach(r=>{cnt.all++;const s=_eff(r);if(cnt[s]!==undefined)cnt[s]++;if(s==='confirmed')cnt.matched++;if(r.status==='skipped')cnt.skipped++;});
   document.querySelectorAll('.fchip[data-status]').forEach(ch=>{
     const k=ch.dataset.status,b=ch.querySelector('.fchip-n');
     if(b&&cnt[k]!==undefined)b.textContent=cnt[k];
   });
+  // Also refresh the header stat pills from live data
+  const el=document.getElementById('tbl-stats');
+  if(el)el.innerHTML=statPills({total:cnt.all,matched:cnt.matched+cnt.confirmed,unmatched:cnt.unmatched,skipped:cnt.skipped});
 }
 
 async function openTable(){
@@ -1379,7 +1618,7 @@ async function openTable(){
         const data=await r.json();
         if(data.mappings?.length){
           // Merge in any local overrides (_dept, suggested_name) from separate storage
-          S.mappings=data.mappings.map(m=>({...m,...(localCache[m.id]?{_dept:localCache[m.id]._dept,suggested_name:localCache[m.id].suggested_name}:{})}));
+          S.mappings=data.mappings.map(m=>({...m,...(localCache[m.id]?{_dept:localCache[m.id]._dept,suggested_name:localCache[m.id].suggested_name,_masterOverrides:localCache[m.id]._masterOverrides,_pendingOverrides:localCache[m.id]._pendingOverrides}:{})}));
           _rebuildNameIndex();
           if(ses&&data.stats)ses.stats=data.stats;
           _saveMappings(ses?.jobId,S.mappings);
@@ -1399,6 +1638,72 @@ async function openTable(){
   const st=ses?.stats||{};document.getElementById('tbl-stats').innerHTML=statPills(st);
   filterTable();
   _loadSuggestions();
+  // Fetch master details for all matched catalogue names
+  _fetchMasterDetailsBulk();
+}
+
+function startMasterCellEdit(td, e){
+  e.stopPropagation();
+  if(td.querySelector('input,textarea'))return; // already editing
+  const rowId=td.dataset.rowId;
+  const col=td.dataset.col;
+  const wrap=td.dataset.wrap==='true';
+  const cur=td.querySelector('span')?.textContent||'';
+  const isPlaceholder=cur==='—';
+  const val=isPlaceholder?'':cur;
+
+  const useTa=col==='description'||col==='precautions'||col==='alias'||col==='tags';
+  td.innerHTML='';
+  if(useTa){
+    const ta=document.createElement('textarea');
+    ta.value=val;
+    ta.style.cssText='width:180px;min-height:72px;font-size:11px;font-family:inherit;border:1.5px solid var(--primary);border-radius:4px;padding:4px 6px;resize:vertical;outline:none;background:var(--surface);color:var(--text);line-height:1.5;position:relative;z-index:10';
+    ta.addEventListener('blur',()=>_saveMasterCell(td,rowId,col,ta.value));
+    ta.addEventListener('keydown',ev=>{if(ev.key==='Escape'){ev.preventDefault();_cancelMasterCell(td,rowId,col);}});
+    td.appendChild(ta);ta.focus();ta.select();
+  }else{
+    const inp=document.createElement('input');
+    inp.type='text';inp.value=val;
+    inp.style.cssText='width:100%;font-size:11px;font-family:inherit;border:1.5px solid var(--primary);border-radius:4px;padding:3px 6px;outline:none;background:var(--surface);color:var(--text)';
+    inp.addEventListener('blur',()=>_saveMasterCell(td,rowId,col,inp.value));
+    inp.addEventListener('keydown',ev=>{
+      if(ev.key==='Enter'){ev.preventDefault();inp.blur();}
+      if(ev.key==='Escape'){ev.preventDefault();_cancelMasterCell(td,rowId,col);}
+    });
+    td.appendChild(inp);inp.focus();inp.select();
+  }
+}
+
+function _saveMasterCell(td,rowId,col,newVal){
+  const idx=S.mappings.findIndex(m=>m.id===rowId);
+  if(idx<0)return;
+  if(!S.mappings[idx]._masterOverrides)S.mappings[idx]._masterOverrides={};
+  S.mappings[idx]._masterOverrides[col]=newVal;
+  _saveMappings(curSession()?.jobId,S.mappings);
+  // Re-render just this cell
+  const edited=true;
+  td.style.background='var(--primary-light)';
+  td.innerHTML=newVal?`<span>${esc(newVal)}</span>`:`<span style="color:var(--muted)">—</span>`;
+}
+
+function _cancelMasterCell(td,rowId,col){
+  const idx=S.mappings.findIndex(m=>m.id===rowId);
+  const ov=(idx>=0&&S.mappings[idx]._masterOverrides)||{};
+  const orig=ov[col]!==undefined?ov[col]:(S.masterDetails[S.mappings[idx]?.standard_name]||{})[col]||'';
+  td.innerHTML=orig?`<span>${esc(orig)}</span>`:`<span style="color:var(--muted)">—</span>`;
+}
+
+async function _fetchMasterDetailsBulk(){
+  const names=[...new Set(S.mappings.map(m=>m.standard_name).filter(Boolean))];
+  if(!names.length)return;
+  try{
+    const res=await fetch(`${API}/api/master-details-bulk`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({catalogue_names:names})
+    });
+    const data=await res.json();
+    if(data.rows){S.masterDetails=data.rows;renderTable();}
+  }catch(_){}
 }
 
 // ── AI suggestions for unmatched rows ────────────────────────────────────────
@@ -1427,7 +1732,7 @@ async function _loadSuggestions(){
         if(row&&s&&s!=='null'&&s!=='—')row.suggested_name=s;
       });
       _saveMappings(ses?.jobId,S.mappings);
-      saveSessions();filterTable();
+      saveSessions();renderPreviewTable();filterTable();
     }
   }catch(e){console.warn('suggestion load:',e);}
   finally{_suggLoading=false;}
@@ -1436,22 +1741,92 @@ function closeTable(){document.getElementById('table-overlay').classList.remove(
 
 function setStatusFilter(status,el){
   S.statusFilter=status;
+  S.selected.clear();
+  renderBulkBar();
   document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');filterTable();
 }
 function setDeptFilter(dept,el){
+  S.selected.clear();
+  renderBulkBar();
   if(S.deptFilter===dept){S.deptFilter='all';el.classList.remove('active');}
   else{S.deptFilter=dept;document.querySelectorAll('.fchip[data-group="dept"]').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+  filterTable();_syncPvwChips();
+}
+function toggleMissingDd(e){
+  e.stopPropagation();
+  document.getElementById('missing-dd-panel').classList.toggle('open');
+}
+document.addEventListener('click',()=>document.getElementById('missing-dd-panel')?.classList.remove('open'));
+function toggleMissingField(cb){
+  if(cb.checked)S.missingFilter.add(cb.value);
+  else S.missingFilter.delete(cb.value);
+  _updateTblChatCtx();
   filterTable();
+  _updateMissingLabel();
+}
+function _updateMissingLabel(){
+  const n=S.missingFilter.size;
+  const btn=document.getElementById('missing-dd-btn');
+  const lbl=document.getElementById('missing-dd-label');
+  if(!btn||!lbl)return;
+  if(n===0){lbl.textContent='— All —';btn.classList.remove('active');}
+  else{
+    const rows=S.filtered.length;
+    lbl.textContent=`${n} field${n>1?'s':''} missing · ${rows} row${rows!==1?'s':''}`;
+    btn.classList.add('active');
+  }
+}
+function setPvwStatusFilter(status,el){
+  S.statusFilter=status;
+  document.querySelectorAll('[data-pvw-status]').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll(`.fchip[data-status="${status}"]`).forEach(c=>c.classList.add('active'));
+  filterTable();renderPreviewTable();_updatePvwChipCounts();
+}
+function setPvwDeptFilter(dept,el){
+  if(S.deptFilter===dept){S.deptFilter='all';el.classList.remove('active');}
+  else{S.deptFilter=dept;document.querySelectorAll('[data-pvw-dept]').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+  filterTable();renderPreviewTable();_updatePvwChipCounts();
+}
+function _syncPvwChips(){
+  document.querySelectorAll('[data-pvw-status]').forEach(c=>c.classList.remove('active'));
+  const a=document.querySelector(`[data-pvw-status="${S.statusFilter}"]`);if(a)a.classList.add('active');
+  _updatePvwChipCounts();
+}
+function _updatePvwChipCounts(){
+  const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0};
+  S.mappings.forEach(r=>{cnt.all++;const s=_eff(r);if(cnt[s]!==undefined)cnt[s]++;if(s==='confirmed')cnt.matched++;});
+  document.querySelectorAll('[data-pvw-status]').forEach(ch=>{
+    const k=ch.dataset.pvwStatus,b=ch.querySelector('.fchip-n');
+    if(b&&cnt[k]!==undefined)b.textContent=cnt[k];
+  });
 }
 
 function filterTable(){
   const q=(document.getElementById('tbl-search')||{}).value?.toLowerCase()||'';
   S.filtered=S.mappings.filter(r=>{
     const eff=_eff(r);
-    if(S.statusFilter!=='all'&&eff!==S.statusFilter)return false;
+    const effForFilter=(eff==='confirmed')?'matched':eff;
+    if(S.statusFilter!=='all'&&effForFilter!==S.statusFilter)return false;
     if(S.deptFilter!=='all'&&_dept(r)!==S.deptFilter)return false;
     if(q&&!r.raw_name.toLowerCase().includes(q)&&!(r.standard_name||'').toLowerCase().includes(q))return false;
+    const hasPending=r._pendingOverrides&&Object.keys(r._pendingOverrides).length>0;
+    const hasConfirmed=r._masterOverrides&&Object.keys(r._masterOverrides).length>0;
+    if(S.aiFilled&&!hasPending&&!hasConfirmed)return false;
+    if(S.missingFilter.size>0){
+      // Pending AI rows stay visible so user can review and confirm
+      if(!hasPending||!S.aiFilled){
+        const md=S.masterDetails[r.standard_name]||{};
+        const ov={...(hasConfirmed?r._masterOverrides:{}),...(hasPending?r._pendingOverrides:{})};
+        const anyMissing=[...S.missingFilter].some(key=>{
+          const val=ov[key]!==undefined?ov[key]:(md[key]||'');
+          return !val||!String(val).trim();
+        });
+        if(!anyMissing)return false;
+      }
+    }
     return true;
   });
   // Rejected rows sink to the bottom (req 3)
@@ -1461,11 +1836,27 @@ function filterTable(){
   });
   renderTable();
   _updateChipCounts();
+  _updateTblChatCtx();
+  _updateMissingLabel();
 }
 
 function renderTable(){
+  // Rebuild header with master detail columns
+  const headRow=document.getElementById('tbl-head-row');
+  if(headRow){
+    // Remove any previously added master cols
+    headRow.querySelectorAll('.master-col-th').forEach(el=>el.remove());
+    MASTER_COLS.forEach(col=>{
+      const th=document.createElement('th');
+      th.className='master-col-th';
+      th.style.cssText=`min-width:${col.width};white-space:nowrap;background:var(--surface-gray)`;
+      th.textContent=col.label;
+      headRow.appendChild(th);
+    });
+  }
   const tb=document.getElementById('tbl-body');
-  if(!S.filtered.length){tb.innerHTML=`<tr><td colspan="9" class="tbl-empty">No rows match your filter.</td></tr>`;const mcb=document.getElementById('master-cb');if(mcb)mcb.checked=false;return;}
+  const colSpan=9+MASTER_COLS.length;
+  if(!S.filtered.length){tb.innerHTML=`<tr><td colspan="${colSpan}" class="tbl-empty">No rows match your filter.</td></tr>`;const mcb=document.getElementById('master-cb');if(mcb)mcb.checked=false;return;}
   tb.innerHTML=S.filtered.map((r,i)=>{
     const c=Math.round((r.confidence||0)*100);
     const cls=c>=70?'h':c>=40?'m':c===0?'z':'l';
@@ -1480,14 +1871,14 @@ function renderTable(){
     const sugg=r.suggested_name||'';
     const snHtml=`<div class="sn-wrap">
       <div class="sn-row">
-        <input class="sn-input" data-id="${r.id}" value="${esc(r.standard_name||'')}" placeholder="${eff==='unmatched'?'Enter standard name…':''}"
+        <input class="sn-input" data-id="${r.id}" value="${esc(r.standard_name||'')}" title="${esc(r.standard_name||'')}" placeholder="${eff==='unmatched'?'Enter standard name…':''}"
           onchange="inlineEdit('${r.id}',this.value)" onkeydown="snKeyNav(event,'${r.id}')" onfocus="this.select()"/>
         <div class="sn-icons">
           ${sugg?`<button class="sn-icon" title="Restore suggestion" onclick="regenStd('${r.id}',event)"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>`:''}
           <button class="sn-icon clr" title="Clear name" onclick="clearStd('${r.id}',event)"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
-      ${sugg&&!r.standard_name?`<div class="sn-sugg">💡 ${esc(truncate(sugg,44))}</div>`:''}
+      ${sugg&&!r.standard_name?`<div style="display:flex;align-items:center;gap:4px"><div class="sn-sugg" style="flex:1;min-width:0" title="${esc(sugg)}">💡 ${esc(sugg)}</div><button style="flex-shrink:0;padding:1px 5px;border:1px solid var(--border-input);border-radius:3px;background:var(--surface);cursor:pointer;font-size:10px;color:var(--muted)" title="Copy suggestion" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(sugg)}').then(()=>toast('Copied'))">⎘</button></div>`:''}
     </div>`;
     // Action buttons — icon only
     let acts='';
@@ -1503,16 +1894,39 @@ function renderTable(){
       acts=`<button class="btn-restore" onclick="restoreRow('${r.id}',event)" title="Restore">↩</button>`;
     }
     const priceDisp=r.price?`₹${esc(r.price)}`:'—';
+    const pencilSvg=`<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>`;
+    // Extra master detail columns
+    const md=S.masterDetails[r.standard_name]||{};
+    const _ov={...(r._masterOverrides||{}),...(r._pendingOverrides||{})};
+    const _isPending=(key)=>r._pendingOverrides?.[key]!==undefined&&r._masterOverrides?.[key]===undefined;
+    const masterCells=MASTER_COLS.map(col=>{
+      const rawV=_ov[col.key]!==undefined?_ov[col.key]:(md[col.key]||'');
+      const v_mrp=(col.key==='mrp'||col.key==='display_mrp')&&!rawV?(r.price||''):rawV;
+      const v=col.key==='age_range'?v_mrp.replace(/\$/g,' to '):v_mrp;
+      const edited=_ov[col.key]!==undefined;
+      const editedCls=edited?(_isPending(col.key)?'cell-pending':'cell-confirmed'):'';
+      const cellStyle=col.wrap
+        ?`white-space:normal;word-break:break-word;min-width:${col.width};max-width:${col.width};font-size:11px;cursor:text;line-height:1.45;vertical-align:top;`
+        :`white-space:nowrap;max-width:${col.width};overflow:hidden;text-overflow:ellipsis;font-size:11px;cursor:text;`;
+      const inner=v?`<span>${esc(v)}</span>`:`<span style="color:var(--muted)">—</span>`;
+      return `<td class="master-editable-cell${editedCls?' '+editedCls:''}" data-row-id="${r.id}" data-col="${col.key}" data-wrap="${!!col.wrap}" style="${cellStyle}" onclick="startMasterCellEdit(this,event)" title="${esc(v)}">${inner}</td>`;
+    }).join('');
     return `<tr class="${hl}" data-id="${r.id}" onclick="rowClick('${r.id}',event)">
-      <td class="cb-td" onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" ${sel?'checked':''} onchange="toggleSelect('${r.id}',this.checked)"/></td>
-      <td style="color:var(--muted);font-size:11px">${i+1}</td>
-      <td style="font-weight:500"><span class="dept-dot ${dept==='radiology'?'rad':'path'}" title="${dept}"></span>${esc(stripPrice(r.raw_name))}</td>
-      <td class="price-cell">${priceDisp}</td>
-      <td><span class="dept-badge ${dept==='radiology'?'rad':'path'}">${dept==='radiology'?'RAD':'PATH'}</span></td>
-      <td onclick="event.stopPropagation()">${snHtml}</td>
+      <td class="cb-td tbl-sticky" style="left:0" onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" ${sel?'checked':''} onchange="toggleSelect('${r.id}',this.checked)"/></td>
+      <td class="tbl-sticky" style="left:34px;width:54px;min-width:54px;max-width:54px;color:var(--muted);font-size:11px;text-align:right;padding:6px 8px 6px 2px">${i+1}</td>
+      <td class="tbl-sticky" style="left:88px;font-weight:500;min-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.raw_name)}"><span class="dept-dot ${dept==='radiology'?'rad':'path'}"></span>${esc(stripPrice(r.raw_name))}</td>
+      <td class="price-cell" onclick="event.stopPropagation()" style="white-space:nowrap"><div class="editable-cell direct-edit-cell" id="price-cell-${r.id}" onclick="startFieldEdit('${r.id}','price',event)">
+        <span class="price-val">${priceDisp}</span>
+      </div></td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap"><div class="editable-cell" id="dept-cell-${r.id}">
+        <span class="dept-badge ${dept==='radiology'?'rad':'path'}" title="${dept==='radiology'?'Radiology':'Pathology'}">${dept==='radiology'?'Rad':'Path'}</span>
+        <button class="pencil-btn" title="Edit department" onclick="startFieldEdit('${r.id}','dept',event)">${pencilSvg}</button>
+      </div></td>
+      <td onclick="event.stopPropagation()" style="min-width:220px">${snHtml}</td>
       <td>${confHtml}</td>
       <td><span class="stat ${eff}">${eff}</span></td>
       <td onclick="event.stopPropagation()"><div class="act-btns">${acts}<button class="btn-row-edit" onclick="openRowModal('${r.id}')" title="Edit detail"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button></div></td>
+      ${masterCells}
     </tr>`;
   }).join('');
   const allSel=S.filtered.length>0&&S.filtered.every(r=>S.selected.has(r.id));
@@ -1521,7 +1935,7 @@ function renderTable(){
 
 // ── Selection ─────────────────────────────────────────────────────────────────
 function rowClick(id,e){
-  if(e.target.closest('.cb-td')||e.target.closest('.act-btns')||e.target.closest('.sn-wrap'))return;
+  if(e.target.closest('.cb-td')||e.target.closest('.act-btns')||e.target.closest('.sn-wrap')||e.target.closest('.editable-cell'))return;
   const was=S.selected.has(id);
   if(was)S.selected.delete(id);else S.selected.add(id);
   const tr=e.currentTarget;tr.classList.toggle('row-sel',!was);
@@ -1540,21 +1954,111 @@ function toggleSelectAll(checked){
   S.filtered.forEach(r=>{if(checked)S.selected.add(r.id);else S.selected.delete(r.id);});
   renderBulkBar();renderTable();
 }
+function _updateAiFilledCount(){
+  const n=S.mappings.filter(m=>
+    (m._pendingOverrides&&Object.keys(m._pendingOverrides).length>0)||
+    (m._masterOverrides&&Object.keys(m._masterOverrides).length>0)
+  ).length;
+  const el=document.getElementById('ai-filled-n');if(el)el.textContent=n;
+  if(n===0){S.aiFilled=false;document.getElementById('ai-filled-chip')?.classList.remove('active');}
+  return n;
+}
 function renderBulkBar(){
   const bar=document.getElementById('bulk-bar'),n=S.selected.size;
-  if(n>0){bar.classList.add('show');document.getElementById('bulk-count-text').textContent=`${n} row${n>1?'s':''} selected`;}
-  else bar.classList.remove('show');
+  if(n>0){
+    bar.classList.add('show');
+    document.getElementById('bulk-count-text').textContent=`${n} row${n>1?'s':''} selected`;
+  }else bar.classList.remove('show');
+  const fillBtn=document.getElementById('quick-fill-btn');
+  if(fillBtn)fillBtn.textContent=n>0?`⚡ Fill missing (${n} selected)`:'⚡ Fill all missing fields';
 }
 function clearSelection(){S.selected.clear();renderBulkBar();renderTable();}
+function confirmAiDetails(){
+  const ids=[...S.selected];if(!ids.length)return;
+  let count=0;
+  const ses=curSession();
+  ids.forEach(id=>{
+    const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
+    const pending=S.mappings[idx]._pendingOverrides;
+    if(!pending||!Object.keys(pending).length)return;
+    if(!S.mappings[idx]._masterOverrides)S.mappings[idx]._masterOverrides={};
+    Object.assign(S.mappings[idx]._masterOverrides,pending);
+    delete S.mappings[idx]._pendingOverrides;
+    count++;
+  });
+  if(count){
+    _saveMappings(ses?.jobId,S.mappings);
+    // Push confirmed overrides to server job cache
+    fetch(`${API}/api/save-overrides`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:ses?.jobId,mappings:S.mappings})}).catch(()=>{});
+    S.selected.clear();
+    // Update AI Filled chip — now shows 0 pending
+    _updateAiFilledCount();
+    renderBulkBar();filterTable();
+    toast(`AI details confirmed for ${count} row${count>1?'s':''} — will be included in export`);
+  }else{
+    toast('No pending AI suggestions in selection');
+  }
+}
 async function bulkAction(status){
   const ids=[...S.selected];if(!ids.length)return;
-  for(const id of ids)await _setRowStatus(id,status);
-  S.selected.clear();renderBulkBar();filterTable();
+  const ses=curSession();if(!ses?.jobId)return;
+  // Batch: update all rows in memory first, render once, then fire API calls in parallel
+  ids.forEach(id=>{
+    const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
+    S.mappings[idx]={...S.mappings[idx],status};
+    _syncChatRow(id,status);
+    // Promote pending AI overrides when confirming
+    if(status==='confirmed'){
+      const pending=S.mappings[idx]._pendingOverrides;
+      if(pending&&Object.keys(pending).length){
+        if(!S.mappings[idx]._masterOverrides)S.mappings[idx]._masterOverrides={};
+        Object.assign(S.mappings[idx]._masterOverrides,pending);
+        delete S.mappings[idx]._pendingOverrides;
+      }
+    }
+  });
+  S.selected.clear();
+  _saveMappings(ses?.jobId,S.mappings);
+  renderBulkBar();renderPreviewTable();filterTable();
+  _updateAiFilledCount();
   toast(`${ids.length} row${ids.length>1?'s':''} marked as ${status}`);
+  // Fire API calls in parallel — don't await, UI already updated
+  Promise.all(ids.map(id=>
+    fetch(`${API}/api/mapping/status`,{method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:ses.jobId,row_id:id,status})}).catch(()=>{})
+  )).then(()=>saveSessions()).catch(()=>{});
 }
 
 // ── Row actions ───────────────────────────────────────────────────────────────
-async function confirmRow(id,e){e&&e.stopPropagation();await _setRowStatus(id,'confirmed');toast('Mapping confirmed');}
+async function confirmRow(id,e){
+  e&&e.stopPropagation();
+  const r=S.mappings.find(m=>m.id===id);
+  if(r&&!r.standard_name&&r.suggested_name)await inlineEdit(id,r.suggested_name);
+  await _setRowStatus(id,'confirmed');
+  // If filter was on unmatched, the confirmed row would vanish — switch to all
+  if(S.statusFilter==='unmatched'){
+    S.statusFilter='all';
+    document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
+    document.querySelector('.fchip[data-status="all"]')?.classList.add('active');
+    document.querySelectorAll('[data-pvw-status]').forEach(c=>c.classList.remove('active'));
+    document.querySelector('[data-pvw-status="all"]')?.classList.add('active');
+    filterTable();renderPreviewTable();
+  }
+  toast('Mapping confirmed');
+}
+async function _confirmChatRows(ids){
+  await Promise.all(ids.map(id=>_setRowStatus(id,'confirmed')));
+  if(S.statusFilter==='unmatched'||S.statusFilter==='ai_filled'){
+    S.statusFilter='all';
+    document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
+    document.querySelector('.fchip[data-status="all"]')?.classList.add('active');
+    document.querySelectorAll('[data-pvw-status]').forEach(c=>c.classList.remove('active'));
+    document.querySelector('[data-pvw-status="all"]')?.classList.add('active');
+  }
+  filterTable();renderPreviewTable();
+  toast(`${ids.length} row${ids.length>1?'s':''} confirmed`);
+}
 async function rejectRow(id,e){e&&e.stopPropagation();await _setRowStatus(id,'rejected');toast('Mapping rejected');}
 async function restoreRow(id,e){
   e&&e.stopPropagation();
@@ -1597,6 +2101,395 @@ async function inlineEdit(id,val){
   _saveMappings(ses?.jobId,S.mappings);
   renderPreviewTable();filterTable();toast('Saved');saveSessions();
 }
+function applyPvwSugg(id,e){
+  e.stopPropagation();
+  const r=S.mappings.find(m=>m.id===id);
+  if(!r?.suggested_name)return;
+  inlineEdit(id,r.suggested_name);
+}
+
+// ── Markdown renderer for chat messages ──────────────────────────────────────
+function _renderMd(text){
+  if(!text)return'';
+  const lines=text.split('\n');
+  let html='';let inTable=false;let isHead=true;let tableHtml='';
+  const fmtLine=s=>s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>');
+  for(const raw of lines){
+    const line=raw.trim();
+    if(line.startsWith('|')&&line.endsWith('|')){
+      const cells=line.split('|').slice(1,-1).map(c=>c.trim());
+      if(cells.every(c=>/^[-:]+$/.test(c))){isHead=false;continue;}
+      if(!inTable){inTable=true;isHead=true;tableHtml='<table><thead>';}
+      if(isHead){tableHtml+=`<tr>${cells.map(c=>`<th>${fmtLine(esc(c))}</th>`).join('')}</tr></thead><tbody>`;isHead=false;}
+      else tableHtml+=`<tr>${cells.map(c=>`<td>${fmtLine(esc(c))}</td>`).join('')}</tr>`;
+    }else{
+      if(inTable){html+=tableHtml+'</tbody></table>';tableHtml='';inTable=false;}
+      html+=line?`<div>${fmtLine(esc(line))}</div>`:'<div style="height:5px"></div>';
+    }
+  }
+  if(inTable)html+=tableHtml+'</tbody></table>';
+  return html;
+}
+
+// ── Table AI Chat ─────────────────────────────────────────────────────────────
+let _tblChatTab='chat';
+function switchTblTab(tab){
+  _tblChatTab=tab;
+  document.getElementById('tab-chat').classList.toggle('active',tab==='chat');
+  document.getElementById('tab-history').classList.toggle('active',tab==='history');
+  document.getElementById('tbl-chat-msgs').style.display=tab==='chat'?'flex':'none';
+  document.getElementById('tbl-history-pane').style.display=tab==='history'?'flex':'none';
+  document.getElementById('tbl-chat-input-row').style.display=tab==='chat'?'flex':'none';
+  if(tab==='history')_renderHistory();
+}
+function _renderHistory(){
+  const pane=document.getElementById('tbl-history-pane');if(!pane)return;
+  if(!S.tblChangeHistory.length){pane.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px">No AI changes yet.</div>';return;}
+  pane.innerHTML=[...S.tblChangeHistory].reverse().map(h=>`
+    <div class="history-entry">
+      <div class="history-entry-hdr">
+        <span>✓ ${h.summary}</span>
+        <time>${h.time}</time>
+      </div>
+      <table class="history-tbl">
+        <thead><tr><th>Test Name</th><th>Field</th><th>Value</th></tr></thead>
+        <tbody>${h.changes.map(c=>`<tr><td>${esc(c.raw_name)}</td><td>${esc(MASTER_COLS.find(m=>m.key===c.field)?.label||c.field)}</td><td>${esc(c.value)}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`).join('');
+  pane.scrollTop=0;
+}
+function _updateHistoryBadge(){
+  const total=S.tblChangeHistory.reduce((s,h)=>s+h.changes.length,0);
+  const badge=document.getElementById('tbl-history-badge');
+  if(badge){badge.textContent=total;badge.style.display=total?'inline':'none';}
+}
+function toggleAiFilled(btn){
+  S.aiFilled=!S.aiFilled;
+  btn.classList.toggle('active',S.aiFilled);
+  _updateAiFilledCount();
+  filterTable();
+}
+function toggleTblChat(){
+  const panel=document.getElementById('tbl-chat-panel');
+  const btn=document.getElementById('btn-tbl-chat');
+  const isOpen=panel.classList.toggle('open');
+  btn.classList.toggle('active',isOpen);
+  if(isOpen){
+    _updateTblChatCtx();
+    if(!document.getElementById('tbl-chat-msgs').children.length)
+      _tblChatPush('ai','Hi! I can see the rows currently filtered. Ask me to fill any missing fields — e.g. "Fill Overview for all rows" or "Add TAT values based on test type".<br><em>All responses will be in table format.</em>');
+    document.getElementById('tbl-chat-input').focus();
+  }
+}
+function _updateTblChatCtx(){
+  const el=document.getElementById('tbl-chat-ctx');if(!el)return;
+  const n=S.filtered.length;
+  const fields=[...S.missingFilter].map(k=>MASTER_COLS.find(c=>c.key===k)?.label||k).join(', ');
+  el.textContent=fields?`${n} rows · ${fields}`:`${n} rows`;
+}
+function _tblChatPush(role,htmlContent){
+  const msgs=document.getElementById('tbl-chat-msgs');if(!msgs)return;
+  const div=document.createElement('div');
+  div.className=`tbl-msg ${role}`;
+  div.innerHTML=htmlContent;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+function tblChatKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTblChat();}}
+async function quickFillAll(){
+  const MASTER_COL_LABELS=Object.fromEntries(MASTER_COLS.map(c=>[c.key,c.label]));
+  const SKIP_KEYS=new Set(['mrp','discounted_price','display_mrp','report_tat','prescription_required']);
+  const allKeys=MASTER_COLS.map(c=>c.key).filter(k=>!SKIP_KEYS.has(k));
+  const selectedIds=S.selected.size?S.selected:null;
+  const rows=selectedIds
+    ?S.mappings.filter(r=>selectedIds.has(r.id))
+    :(S.filtered.length?S.filtered:S.mappings);
+  if(selectedIds&&!rows.length){toast('No rows selected');return;}
+  // Collect rows that have at least one missing field
+  const rowsWithMissing=rows.filter(r=>{
+    const md=S.masterDetails[r.standard_name]||{};
+    const ov={...(r._masterOverrides||{}),...(r._pendingOverrides||{})};
+    return allKeys.some(k=>!String((ov[k]!==undefined?ov[k]:md[k])||'').trim());
+  });
+  if(!rowsWithMissing.length){toast('All fields already filled');return;}
+  const totalChanges=rowsWithMissing.reduce((s,r)=>{
+    const md=S.masterDetails[r.standard_name]||{};
+    const ov={...(r._masterOverrides||{}),...(r._pendingOverrides||{})};
+    return s+allKeys.filter(k=>!String((ov[k]!==undefined?ov[k]:md[k])||'').trim()).length;
+  },0);
+  _tblChatPush('user',`⚡ Fill all missing fields (${totalChanges} values across ${rowsWithMissing.length} rows)`);
+  const loadingDiv=_tblChatPush('ai',`<em style="color:var(--muted)">Filling fields — 0 / ${rowsWithMissing.length} rows done…</em>`);
+  const ses=curSession();if(!ses?.jobId)return;
+  const nameMap=Object.fromEntries(S.mappings.map(m=>[m.raw_name.toLowerCase().trim(),m.id]));
+  const allApplied=[];
+  // Process in batches of 3 rows to stay within token limits
+  const BATCH=3;
+  for(let bi=0;bi<rowsWithMissing.length;bi+=BATCH){
+    const batch=rowsWithMissing.slice(bi,bi+BATCH);
+    const changes=[];
+    batch.forEach(r=>{
+      const md=S.masterDetails[r.standard_name]||{};
+      const ov={...(r._masterOverrides||{}),...(r._pendingOverrides||{})};
+      allKeys.forEach(k=>{
+        if(!String((ov[k]!==undefined?ov[k]:md[k])||'').trim())
+          changes.push({raw_name:r.raw_name,standard_name:r.standard_name||'',field:k,field_label:MASTER_COL_LABELS[k]||k,value:'???'});
+      });
+    });
+    if(!changes.length)continue;
+    const template=JSON.stringify({type:'fill_master_fields',summary:'AI filled all missing fields',changes},null,2);
+    const msg=
+      `You are filling lab test catalogue data. Below is an action block template.\n`+
+      `Replace EVERY "???" with the correct medical value based on the test name and standard name.\n`+
+      `Rules:\n`+
+      `- Output ONLY the completed \`\`\`action block\`\`\` — no explanation, no table, nothing else\n`+
+      `- Every "???" must be replaced — do not leave any as "???"\n`+
+      `- Use medically accurate values\n`+
+      `- For numeric fields (fasting_hours) use numbers only\n`+
+      `- For yes/no fields (fasting_required, home_collection, collection_type, prescription_required) use Yes or No\n\n`+
+      "```action\n"+template+"\n```";
+    try{
+      const res=await fetch(`${API}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({job_id:ses.jobId,message:msg,mappings:S.mappings,reset_history:true})});
+      const data=await res.json();
+      const action=data.action;
+      if(action?.type==='fill_master_fields'&&action.changes?.length){
+        action.changes.forEach(({raw_name,field,value})=>{
+          if(!value||value==='???')return;
+          const id=nameMap[(raw_name||'').toLowerCase().trim()];if(!id)return;
+          const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
+          if(!S.mappings[idx]._pendingOverrides)S.mappings[idx]._pendingOverrides={};
+          S.mappings[idx]._pendingOverrides[field]=value;
+          allApplied.push({raw_name,field,value});
+        });
+      }
+    }catch(e){console.warn('Batch fill error',e);}
+    const done=Math.min(bi+BATCH,rowsWithMissing.length);
+    loadingDiv.innerHTML=`<em style="color:var(--muted)">Filling fields — ${done} / ${rowsWithMissing.length} rows done…</em>`;
+    filterTable(); // show progress as each batch lands
+  }
+  if(allApplied.length){
+    loadingDiv.innerHTML=_renderMd(
+      `Suggested **${allApplied.length} fields** across **${[...new Set(allApplied.map(c=>c.raw_name))].length} rows** — select rows and click **✓ Confirm Selected** to save.\n\n`+
+      `|Raw Name|Field|Value|\n|---|---|---|\n`+
+      allApplied.map(c=>`|${esc(c.raw_name)}|${MASTER_COL_LABELS[c.field]||c.field}|${esc(String(c.value).slice(0,80)+(String(c.value).length>80?'…':''))}|`).join('\n')
+    );
+    S.tblChangeHistory.push({summary:`AI suggested ${allApplied.length} fields (pending confirmation)`,time:new Date().toLocaleTimeString(),changes:allApplied});
+    _updateHistoryBadge();
+    _saveMappings(ses?.jobId,S.mappings);
+    S.missingFilter.clear();
+    document.querySelectorAll('#missing-dd-panel input[type=checkbox]').forEach(cb=>cb.checked=false);
+    const missingBtn=document.getElementById('missing-dd-btn');const missingLbl=document.getElementById('missing-dd-label');
+    if(missingLbl)missingLbl.textContent='— All —';if(missingBtn)missingBtn.classList.remove('active');
+    S.aiFilled=true;const aiChip=document.getElementById('ai-filled-chip');if(aiChip)aiChip.classList.add('active');
+    const aiN=S.mappings.filter(m=>m._pendingOverrides&&Object.keys(m._pendingOverrides).length>0).length;
+    const nEl=document.getElementById('ai-filled-n');if(nEl)nEl.textContent=aiN;
+    _updateTblChatCtx();filterTable();
+  }else{
+    loadingDiv.innerHTML='<span style="color:var(--muted)">No fields were filled.</span>';
+  }
+}
+async function sendTblChat(resetHistory=false){
+  const inp=document.getElementById('tbl-chat-input');
+  const text=(inp.value||'').trim();if(!text)return;
+  inp.value='';
+  _tblChatPush('user',esc(text));
+  const loadingDiv=_tblChatPush('ai','<em style="color:var(--muted)">Thinking…</em>');
+  const ses=curSession();if(!ses?.jobId)return;
+
+  const missingFields=[...S.missingFilter];
+  const MASTER_COL_LABELS=Object.fromEntries(MASTER_COLS.map(c=>[c.key,c.label]));
+  const ctxKeys=missingFields.length?missingFields:MASTER_COLS.map(c=>c.key);
+  const hasSelection=S.selected.size>0;
+  const scopeRows=hasSelection
+    ?S.filtered.filter(r=>S.selected.has(r.id))
+    :S.filtered.slice(0,60);
+  // Always include all scope rows — not just those with missing fields
+  // (user may be changing existing values, not just filling empty ones)
+  const rowsCtx=scopeRows.map(r=>{
+    const md=S.masterDetails[r.standard_name]||{};
+    const ov={...(r._masterOverrides||{}),...(r._pendingOverrides||{})};
+    const current=Object.fromEntries(MASTER_COLS.map(c=>[c.key,ov[c.key]!==undefined?ov[c.key]:(md[c.key]||'')]));
+    const missing=ctxKeys.filter(k=>!String(current[k]||'').trim());
+    return {raw_name:r.raw_name,standard_name:r.standard_name||'',current_values:current,missing_fields:missing};
+  });
+  const fieldNames=missingFields.map(k=>MASTER_COL_LABELS[k]||k).join(', ')||'all fields';
+  const scopeNote=hasSelection
+    ?`SCOPE: Only update the ${S.selected.size} selected row(s) listed below. Do NOT touch any other rows.`
+    :`SCOPE: Update all ${scopeRows.length} filtered rows listed below.`;
+  const systemCtx=
+    `CRITICAL RULES — follow exactly:\n`+
+    `1. ${scopeNote}\n`+
+    `2. ONLY change the fields the user explicitly asks about. Do NOT infer or update related fields unless the user specifically requests them.\n`+
+    `3. Apply ALL changes in ONE single action block. Do NOT ask for confirmation.\n`+
+    `4. Respond in markdown table format showing what changed.\n`+
+    `5. For fasting_hours, use descriptive text like "8 hours fasting is mandatory" not just a number.\n\n`+
+    `You are updating catalogue data for lab tests.\n`+
+    `Rows in scope (${rowsCtx.length}):\n${JSON.stringify(rowsCtx,null,2)}\n\n`+
+    `Emit this action block:\n`+
+    "```action\n{\"type\":\"fill_master_fields\",\"summary\":\"Short summary\",\"changes\":[{\"raw_name\":\"exact name\",\"field\":\"field_key\",\"value\":\"new value\"}]}\n```\n"+
+    `Valid field keys: ${MASTER_COLS.map(c=>c.key).join(', ')}\n`+
+    `Use exact raw_name values from the JSON above.`;
+
+  try{
+    const r=await fetch(`${API}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:ses.jobId,message:systemCtx+'\n\nUser: '+text,mappings:S.mappings,reset_history:resetHistory})});
+    const data=await r.json();
+    const msg=data.message||'';
+    loadingDiv.innerHTML=_renderMd(msg)||'Done.';
+    document.getElementById('tbl-chat-msgs').scrollTop=9999;
+
+    const action=data.action;
+    if(action?.type==='fill_master_fields'&&action.changes?.length){
+      const nameMap=Object.fromEntries(S.mappings.map(m=>[m.raw_name.toLowerCase().trim(),m.id]));
+      const applied=[];
+      action.changes.forEach(({raw_name,field,value})=>{
+        const id=nameMap[(raw_name||'').toLowerCase().trim()];if(!id)return;
+        const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
+        // Core mapping fields — update directly on the row
+        if(field==='catalogue_name'){S.mappings[idx].standard_name=value;S.mappings[idx].status=value?'matched':'unmatched';}
+        else if(field==='status')S.mappings[idx].status=value;
+        else if(field==='price')S.mappings[idx].price=value;
+        else if(field==='lab_type')S.mappings[idx].lab_type=value;
+        else{
+          // Chat-initiated change — apply directly as confirmed (no pending)
+          // Replace the object to break any stale reference held by S.filtered
+          S.mappings[idx]={...S.mappings[idx],
+            _masterOverrides:{...(S.mappings[idx]._masterOverrides||{}),[field]:value}};
+        }
+        applied.push({raw_name,field,value});
+      });
+      if(applied.length){
+        S.tblChangeHistory.push({
+          summary:action.summary||`${applied.length} field update${applied.length>1?'s':''}`,
+          time:new Date().toLocaleTimeString(),
+          changes:applied,
+        });
+        _updateHistoryBadge();
+        _saveMappings(ses?.jobId,S.mappings);
+        fetch(`${API}/api/save-overrides`,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({job_id:ses?.jobId,mappings:S.mappings})}).catch(()=>{});
+        _updateAiFilledCount();
+        _updateTblChatCtx();
+        renderPreviewTable();
+        filterTable();
+        // Show confirm button for selected unmatched rows
+        const unmatchedSelected=[...S.selected].filter(id=>{
+          const r=S.mappings.find(m=>m.id===id);
+          return r&&(r.status==='unmatched'||r.status==='ai_filled');
+        });
+        if(unmatchedSelected.length){
+          const idsAttr=unmatchedSelected.join(',');
+          const btn=_tblChatPush('ai',`<div style="margin-top:4px"><button data-confirm-ids="${idsAttr}"
+            style="background:var(--green);color:#fff;border:none;border-radius:var(--radius-xs);padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            Confirm this test${unmatchedSelected.length>1?' ('+unmatchedSelected.length+' rows)':''}</button>
+            <span style="font-size:11px;color:var(--muted);margin-left:8px">Marks as matched</span></div>`);
+          btn.querySelector('[data-confirm-ids]').addEventListener('click',function(){_confirmChatRows(this.dataset.confirmIds.split(','));});
+        }
+      }
+    }
+    if(action?.type==='update_mappings'){_applyActionLocal(action);renderPreviewTable();filterTable();}
+  }catch(e){
+    loadingDiv.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
+  }
+}
+function _applyActionLocal(action){
+  if(!action?.changes?.length)return;
+  const _CORE_FIELDS=new Set(['catalogue_name','status','price','lab_type']);
+  const nameMap=Object.fromEntries(S.mappings.map(m=>[m.raw_name.toLowerCase().trim(),m.id]));
+  action.changes.forEach(({raw_name,field,value})=>{
+    const id=nameMap[(raw_name||'').toLowerCase().trim()];if(!id)return;
+    const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
+    if(field==='catalogue_name'){S.mappings[idx].standard_name=value;S.mappings[idx].status=value?'matched':'unmatched';}
+    else if(field==='status')S.mappings[idx].status=value;
+    else if(field==='price')S.mappings[idx].price=value;
+    else if(field==='lab_type')S.mappings[idx].lab_type=value;
+    else{
+      // Replace object to break any stale reference in S.filtered
+      S.mappings[idx]={...S.mappings[idx],
+        _masterOverrides:{...(S.mappings[idx]._masterOverrides||{}),[field]:value}};
+    }
+  });
+  const ses=curSession();_saveMappings(ses?.jobId,S.mappings);renderPreviewTable();filterTable();
+}
+
+function startFieldEdit(id,field,e){
+  e.stopPropagation();
+  const row=S.mappings.find(m=>m.id===id);if(!row)return;
+  // Use the actual clicked editable-cell (works for both main table and preview table)
+  const cell=e.target.closest('.editable-cell');
+  if(!cell)return;
+  cell.classList.add('editing');
+
+  if(field==='price'){
+    const cur=row.price||'';
+    cell.innerHTML=`<input class="field-input" type="text" value="${esc(cur)}" placeholder="e.g. 500" style="width:80px"
+      onblur="saveFieldEdit('${id}','price',this.value.trim())"
+      onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.onblur=null;renderPreviewTable();filterTable();}"/>`;
+    const inp=cell.querySelector('input');
+    inp.focus();inp.select();
+  } else {
+    const cur=(row.lab_type||'').toLowerCase()==='radiology'?'Radiology':'Pathology';
+    cell.innerHTML=`<select class="dept-select" onchange="saveFieldEdit('${id}','dept',this.value)">
+      <option value="Pathology" ${cur==='Pathology'?'selected':''}>Pathology</option>
+      <option value="Radiology" ${cur==='Radiology'?'selected':''}>Radiology</option>
+    </select>`;
+    cell.querySelector('select').focus();
+  }
+}
+
+async function saveFieldEdit(id,field,val){
+  const ses=curSession();if(!ses?.jobId)return;
+  // Optimistic update — apply immediately so re-renders show new value before server responds
+  const idx=S.mappings.findIndex(m=>m.id===id);
+  if(idx>=0){
+    if(field==='price')S.mappings[idx].price=val;
+    else S.mappings[idx].lab_type=val;
+  }
+  renderPreviewTable();filterTable();
+  const body={job_id:ses.jobId,row_id:id};
+  if(field==='price')body.price=val;
+  else body.lab_type=val;
+  try{
+    const r=await fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.ok){
+      const updated=await r.json();
+      if(idx>=0)S.mappings[idx]={...S.mappings[idx],...updated};
+      _saveMappings(ses.jobId,S.mappings);
+      renderPreviewTable();filterTable();toast('Saved');saveSessions();
+    }
+  }catch(_){}
+}
+function startSnEdit(id,e){
+  e.stopPropagation();
+  const row=S.mappings.find(m=>m.id===id);if(!row)return;
+  const cell=e.target.closest('.editable-cell');if(!cell)return;
+  cell.classList.add('editing');
+  const cur=row.standard_name||'';
+  cell.innerHTML=`<input class="sn-input" type="text" value="${esc(cur)}" placeholder="Enter standard name…" style="flex:1;min-width:0;font-size:12px"
+    onblur="savePvwSn('${id}',this.value)"
+    onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.onblur=null;renderPreviewTable();filterTable();}"/>`;
+  const inp=cell.querySelector('input');inp.focus();inp.select();
+}
+async function savePvwSn(id,val){
+  const ses=curSession();if(!ses?.jobId)return;
+  const idx=S.mappings.findIndex(m=>m.id===id);
+  if(idx>=0){
+    S.mappings[idx].standard_name=val;
+    S.mappings[idx].status=val.trim()?'matched':'unmatched';
+  }
+  renderPreviewTable();filterTable();
+  try{
+    const r=await fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:ses.jobId,row_id:id,standard_name:val})});
+    if(r.ok){
+      const updated=await r.json();
+      if(idx>=0)S.mappings[idx]={...S.mappings[idx],...updated};
+      _saveMappings(ses.jobId,S.mappings);
+      renderPreviewTable();filterTable();toast('Saved');saveSessions();
+    }
+  }catch(_){}
+}
 // Sync the chat bubble row (um-row-<id>) to reflect a status change
 function _syncChatRow(id,status){
   const el=document.getElementById('um-row-'+id);
@@ -1611,18 +2504,18 @@ async function _setRowStatus(id,status){
   const idx=S.mappings.findIndex(m=>m.id===id);
   if(idx>=0)S.mappings[idx]={...S.mappings[idx],status};
   _syncChatRow(id,status);
-  renderPreviewTable();filterTable();
+  _updateChipCounts();renderPreviewTable();filterTable();
   try{
     const r=await fetch(`${API}/api/mapping/status`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:ses.jobId,row_id:id,status})});
     if(r.ok){
       const updated=await r.json();
       if(idx>=0)S.mappings[idx]={...S.mappings[idx],...updated,status};
     }
-    _saveMappings(ses?.jobId,S.mappings);renderPreviewTable();filterTable();saveSessions();
+    _saveMappings(ses?.jobId,S.mappings);_updateChipCounts();renderPreviewTable();filterTable();saveSessions();
   }catch(e){console.error(e);}
 }
 
-function openRowModal(id){
+async function openRowModal(id){
   const r=S.mappings.find(m=>m.id===id);if(!r)return;
   S.modalRow=r;
   const c=Math.round((r.confidence||0)*100);
@@ -1631,20 +2524,83 @@ function openRowModal(id){
   document.getElementById('rm-raw').textContent=r.raw_name;
   document.getElementById('rm-std').value=r.standard_name||'';
   const priceEl=document.getElementById('rm-price');
-  if(priceEl)priceEl.textContent=r.price?`₹${r.price}`:'—';
+  if(priceEl)priceEl.value=r.price||'';
   const ltEl=document.getElementById('rm-labtype');
-  if(ltEl){const dept=_dept(r);ltEl.innerHTML=`<span class="dept-badge ${dept==='radiology'?'rad':'path'}">${dept==='radiology'?'Radiology':'Pathology'}</span>`;}
+  if(ltEl){const dept=_dept(r);ltEl.value=dept==='radiology'?'Radiology':'Pathology';}
   document.getElementById('rm-conf').textContent=c>0?c+'%':'—';
   document.getElementById('rm-conf-bar').style.cssText=`width:${c}%;background:${bc}`;
   document.getElementById('rm-match').textContent=r.match_type||'—';
   document.getElementById('rm-explain').textContent=_confReason(r);
   document.getElementById('rm-status').textContent=eff;
   document.getElementById('rm-status').className='stat '+eff;
-  // Dept toggle
   const d=_dept(r);
   document.getElementById('rm-dept-path').classList.toggle('active',d==='pathology');
   document.getElementById('rm-dept-rad').classList.toggle('active',d==='radiology');
   document.getElementById('row-modal').classList.add('open');
+  // Load master details async (Output Format fields)
+  const sec=document.getElementById('rm-master-section');
+  const grid=document.getElementById('rm-master-grid');
+  sec.style.display='none'; grid.innerHTML='<div style="color:var(--muted);font-size:11px">Loading…</div>';
+  if(r.standard_name){
+    sec.style.display='';
+    try{
+      const res=await fetch(`${API}/api/master-detail?catalogue_name=${encodeURIComponent(r.standard_name)}`);
+      const data=await res.json();
+      const row0=data.row||{};
+      // Output Format label mapping
+      const FIELD_ORDER=[
+        ['catalogue_name',       'Standard Name (BFHL)'],
+        ['provider_item_name',   'Provider Test Name'],
+        ['loinc_id',             'LOINC ID'],
+        ['lab_requirement',      'Services Offered'],
+        ['entity_type',          'Catalogue Type'],
+        ['mrp',                  'Partner MRP (₹)'],
+        ['discounted_price',     'Discounted Price for Bajaj (₹)'],
+        ['display_mrp',          'Display MRP (₹)'],
+        ['display_discounted_price','Display Discounted Price (₹)'],
+        ['collection_type',      'Lab Visit'],
+        ['home_collection',      'Home Sample Collection'],
+        ['fasting_required',     'Fasting Required'],
+        ['fasting_hours',        'Fasting Hours'],
+        ['age_range',            'Age Range'],
+        ['gender',               'Gender'],
+        ['minimum_patient',      'Min. Patients Required'],
+        ['report_tat',           'Reports TAT (Hours)'],
+        ['alias',                'Alias / Other Names'],
+        ['tags',                 'Tags'],
+        ['prescription_required','Prescription Required'],
+        ['precautions',          'Precautions'],
+        ['description',          'Overview / Description'],
+      ];
+      const FULL_WIDTH=new Set(['description','precautions','alias','tags']);
+      const entries=FIELD_ORDER.filter(([k])=>row0[k]&&row0[k].trim&&row0[k].trim()!='');
+      if(entries.length>0){
+        grid.innerHTML=entries.map(([k,label])=>{
+          const v=esc(String(row0[k]||''));
+          const full=FULL_WIDTH.has(k);
+          const isLong=FULL_WIDTH.has(k);
+          const isCollapsible=k==='description'||k==='precautions';
+          let inputEl;
+          if(isCollapsible){
+            const uid=`mf_${k}`;
+            inputEl=`<details style="margin:0"><summary style="cursor:pointer;font-size:11px;color:var(--primary);user-select:none;list-style:none;display:flex;align-items:center;gap:4px"><span>&#9654; Show / Edit</span></summary><textarea data-field="${k}" rows="4" style="width:100%;box-sizing:border-box;font-size:12px;font-family:inherit;line-height:1.5;padding:6px 8px;border:1px solid var(--border-input);border-radius:5px;background:var(--surface);color:var(--text);resize:vertical;margin-top:6px">${v}</textarea></details>`;
+          } else if(isLong){
+            inputEl=`<textarea data-field="${k}" rows="2" style="width:100%;box-sizing:border-box;font-size:13px;font-family:inherit;line-height:1.45;padding:6px 8px;border:1px solid var(--border-input);border-radius:5px;background:var(--surface);color:var(--text);resize:vertical">${v}</textarea>`;
+          } else {
+            inputEl=`<input data-field="${k}" type="text" value="${v.replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;font-size:13px;padding:6px 8px;border:1px solid var(--border-input);border-radius:5px;background:var(--surface);color:var(--text)"/>`;
+          }
+          return `<div style="${full?'grid-column:1/-1;':''}background:var(--surface-gray);border:1px solid var(--border-divider);border-radius:6px;padding:8px 10px">
+            <div style="color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${esc(label)}</div>
+            ${inputEl}
+          </div>`;
+        }).join('');
+      }else{
+        grid.innerHTML='<div style="color:var(--muted);font-size:11px;grid-column:1/-1">No master data found for this test.</div>';
+      }
+    }catch(_){grid.innerHTML='';}
+  }else{
+    sec.style.display='none';
+  }
 }
 function setModalDept(dept){
   if(!S.modalRow)return;
@@ -1661,11 +2617,35 @@ async function saveRowModal(){
   const val=document.getElementById('rm-std').value.trim();
   await inlineEdit(S.modalRow.id,val);
   if(val)await _setRowStatus(S.modalRow.id,'confirmed');
-  // Persist dept override onto the mapping row
-  if(S.modalRow._dept){
-    const idx=S.mappings.findIndex(m=>m.id===S.modalRow.id);
-    if(idx>=0)S.mappings[idx]._dept=S.modalRow._dept;
+  // Persist price + lab_type + dept overrides onto the mapping row
+  const idx=S.mappings.findIndex(m=>m.id===S.modalRow.id);
+  if(idx>=0){
+    const newPrice=document.getElementById('rm-price').value.trim();
+    const newLabType=document.getElementById('rm-labtype').value;
+    if(newPrice!==''||newLabType){
+      if(newPrice!=='')S.mappings[idx].price=newPrice;
+      S.mappings[idx].lab_type=newLabType;
+      S.mappings[idx]._dept=newLabType.toLowerCase();
+    }
+    if(S.modalRow._dept)S.mappings[idx]._dept=S.modalRow._dept;
     const ses=curSession();_saveMappings(ses?.jobId,S.mappings);
+    // Collect edited master-detail fields from the grid
+    const masterEdits={};
+    document.querySelectorAll('#rm-master-grid [data-field]').forEach(el=>{
+      const k=el.dataset.field;
+      const v=(el.value||'').trim();
+      if(v!=='')masterEdits[k]=v;
+    });
+    if(Object.keys(masterEdits).length){
+      if(!S.mappings[idx]._masterOverrides)S.mappings[idx]._masterOverrides={};
+      Object.assign(S.mappings[idx]._masterOverrides,masterEdits);
+    }
+    const ses2=curSession();_saveMappings(ses2?.jobId,S.mappings);
+    // Patch price + lab_type to backend
+    if(ses2?.jobId){
+      fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({job_id:ses2.jobId,row_id:S.modalRow.id,price:newPrice||null,lab_type:newLabType||null})}).catch(()=>{});
+    }
   }
   document.getElementById('row-modal').classList.remove('open');
   filterTable();
@@ -1680,7 +2660,23 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElement
 async function exportFile(){
   const ses=curSession();if(!ses?.jobId){toast('No job to export');return;}
   toast('Generating export…');
-  const a=document.createElement('a');a.href=`${API}/api/export/${ses.jobId}`;a.download='';a.click();
+  try{
+    // Send mappings (with _masterOverrides) so server can include all fields
+    const resp=await fetch(`${API}/api/export`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:ses.jobId,mappings:S.mappings})
+    });
+    if(!resp.ok)throw new Error(await resp.text());
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const cd=resp.headers.get('content-disposition')||'';
+    const fnMatch=cd.match(/filename="?([^"]+)"?/);
+    a.href=url;a.download=fnMatch?fnMatch[1]:'export.xlsx';a.click();
+    URL.revokeObjectURL(url);
+    toast('Export downloaded');
+  }catch(e){toast('Export failed: '+e.message);}
 }
 
 function stripPrice(s){return s.replace(/[\s\-–]+R[Ss]\.?\s*[\d,]+\s*$/,'').replace(/[\s\t]+$/,'').trim();}
@@ -1689,12 +2685,52 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function truncate(s,n){return s&&s.length>n?s.slice(0,n)+'…':s||'';}
 function fmt(b){return b>1e6?(b/1e6).toFixed(1)+' MB':b>1e3?(b/1e3).toFixed(0)+' KB':b+' B';}
 function md(t){
-  let s=esc(t);
-  s=s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-  s=s.replace(/`([^`]+)`/g,'<code style="background:var(--primary-light);border:1px solid var(--primary-border);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--primary)">$1</code>');
-  s=s.replace(/^(\d+)\.\s+(.+)$/gm,'<li>$2</li>');
-  if(s.includes('<li>'))s=s.replace(/(<li>[\s\S]*?<\/li>)+/g,m=>`<ol>${m}</ol>`);
-  s=s.replace(/\n/g,'<br>');
+  // ── Inline formatting helper (used inside table cells) ───────────────────
+  function inlineMd(raw){
+    let s = esc(raw);
+    s = s.replace(/✅/g,'✅').replace(/❌/g,'❌');
+    s = s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    s = s.replace(/`([^`]+)`/g,'<code style="background:var(--primary-light);border:1px solid var(--primary-border);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--primary)">$1</code>');
+    return s;
+  }
+  // ── Tables (process BEFORE esc() so | chars survive) ─────────────────────
+  t = t.replace(/((?:[ \t]*\|.+\|\s*\n?)+)/g, tableBlock => {
+    const lines = tableBlock.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    if(lines.length < 2) return tableBlock;
+    const isSep = l => /^\|[\s\|\-:]+\|$/.test(l);
+    const parseRow = l => l.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+    let html = '<div style="overflow-x:auto;margin:8px 0"><table style="border-collapse:collapse;width:100%;font-size:12px">';
+    let dataStart = 1;
+    if(isSep(lines[1])){ dataStart = 2;
+      const headers = parseRow(lines[0]);
+      html += '<thead><tr>' + headers.map(h=>`<th style="background:var(--primary);color:#fff;padding:6px 10px;text-align:left;white-space:nowrap">${inlineMd(h)}</th>`).join('') + '</tr></thead>';
+    }
+    html += '<tbody>';
+    lines.slice(dataStart).filter(l=>!isSep(l)).forEach((l,i)=>{
+      const cells = parseRow(l);
+      html += `<tr style="background:${i%2===0?'var(--hover)':'transparent'}">` + cells.map(c=>`<td style="padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top">${inlineMd(c)}</td>`).join('') + '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  });
+  // ── Non-table text: split on table placeholders, esc + format the rest ───
+  // Split into table HTML blocks vs plain text segments
+  const TABLE_PLACEHOLDER = '\x00TABLE\x00';
+  const tableChunks = [];
+  let s = t.replace(/<div style="overflow-x:auto[\s\S]*?<\/table><\/div>/g, match => {
+    tableChunks.push(match);
+    return TABLE_PLACEHOLDER;
+  });
+  // Now escape and format the plain-text parts
+  s = s.split(TABLE_PLACEHOLDER).map(chunk => {
+    let c = esc(chunk);
+    c = c.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    c = c.replace(/`([^`]+)`/g,'<code style="background:var(--primary-light);border:1px solid var(--primary-border);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--primary)">$1</code>');
+    c = c.replace(/^(\d+)\.\s+(.+)$/gm,'<li>$2</li>');
+    if(c.includes('<li>'))c=c.replace(/(<li>[\s\S]*?<\/li>)+/g,m=>`<ol>${m}</ol>`);
+    c = c.replace(/\n/g,'<br>');
+    return c;
+  }).reduce((acc, chunk, i) => acc + chunk + (tableChunks[i] || ''), '');
   return s;
 }
 function toast(msg){
@@ -1770,19 +2806,22 @@ function _pvwConfBadge(r){
   const cls=c>=70?'conf-high':c>=40?'conf-mid':'conf-low';
   return`<span class="${cls}">${c}%</span>`;
 }
+const _expandSvg=`<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
 function _pvwActions(r){
   const eff=_eff(r);
+  const enlarge=`<button class="btn-pvw-enlarge" onclick="openRowModal('${r.id}');event.stopPropagation()" title="View all details">${_expandSvg}</button>`;
   if(eff==='matched')
-    return`<button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
+    return`${enlarge}<button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
   if(eff==='confirmed')
-    return`<button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
+    return`${enlarge}<button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
   if(eff==='unmatched')
-    return`<button class="btn-confirm" onclick="openRowModal('${r.id}');event.stopPropagation()" title="Confirm">✓</button><button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
+    return`${enlarge}<button class="btn-confirm" onclick="confirmRow('${r.id}',event)" title="Confirm">✓</button><button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
   if(eff==='rejected')
-    return`<button class="btn-restore" onclick="_setRowStatus('${r.id}','matched');event.stopPropagation()" title="Restore">↩</button>`;
-  return'';
+    return`${enlarge}<button class="btn-restore" onclick="_setRowStatus('${r.id}','matched');event.stopPropagation()" title="Restore">↩</button>`;
+  return enlarge;
 }
 function renderPreviewTable(){
+  _updatePvwChipCounts();
   const container=document.getElementById('preview-table-container');
   const footer=document.getElementById('preview-footer');
   const expBtn=document.getElementById('preview-expand-btn');
@@ -1804,12 +2843,17 @@ function renderPreviewTable(){
   const searchBar=document.getElementById('preview-search-bar');
   if(searchBar)searchBar.style.display='';
   const q=(document.getElementById('preview-search')?.value||'').toLowerCase().trim();
-  const rows=(q
-    ?S.mappings.filter(r=>(r.raw_name||'').toLowerCase().includes(q)||(r.standard_name||'').toLowerCase().includes(q))
-    :S.mappings).slice(0,PREVIEW_LIMIT);
+  const rows=S.mappings.filter(r=>{
+    const _pvwEff=_eff(r);
+    const _pvwEffF=(_pvwEff==='confirmed')?'matched':_pvwEff;
+    if(S.statusFilter&&S.statusFilter!=='all'&&_pvwEffF!==S.statusFilter)return false;
+    if(S.deptFilter&&S.deptFilter!=='all'&&_dept(r)!==S.deptFilter)return false;
+    if(q&&!r.raw_name.toLowerCase().includes(q)&&!(r.standard_name||'').toLowerCase().includes(q))return false;
+    return true;
+  }).slice(0,PREVIEW_LIMIT);
   container.innerHTML=`<table class="preview-tbl">
     <colgroup>
-      <col style="width:22px">
+      <col style="width:42px">
       <col style="width:24%">
       <col style="width:55px">
       <col style="width:52px">
@@ -1819,7 +2863,7 @@ function renderPreviewTable(){
       <col style="width:130px">
     </colgroup>
     <thead><tr>
-      <th></th>
+      <th style="color:var(--muted);font-size:10px;text-align:right;padding-right:6px;white-space:nowrap">SR No.</th>
       <th>Raw Test Name</th>
       <th>Price</th>
       <th>Dept</th>
@@ -1834,14 +2878,30 @@ function renderPreviewTable(){
       const dept=_dept(r);
       const dot=dept==='radiology'?'#3B82F6':'#22C55E';
       const priceDisp=r.price?`₹${esc(r.price)}`:'—';
-      return `<tr onclick="openRowModal('${r.id}')">
-        <td class="pvw-num">${i+1}</td>
-        <td class="pvw-raw" title="${esc(r.raw_name)}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dot};margin-right:5px;vertical-align:middle;flex-shrink:0"></span>${esc(truncate(r.raw_name,32))}</td>
-        <td class="price-cell" style="font-size:11px">${priceDisp}</td>
-        <td><span class="dept-badge ${dept==='radiology'?'rad':'path'}" style="font-size:8px">${dept==='radiology'?'RAD':'PATH'}</span></td>
-        <td class="pvw-std ${!r.standard_name?'pvw-empty':''}" title="${esc(r.standard_name||'')}">${esc(truncate(sn,32))}</td>
-        <td class="pvw-conf">${_pvwConfBadge(r)}</td>
-        <td style="text-align:center"><span class="stat ${eff}" style="font-size:9px;padding:2px 6px">${eff}</span></td>
+      const pvwPencil=`<svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>`;
+      return `<tr>
+        <td class="pvw-num" onclick="openRowModal('${r.id}')">${i+1}</td>
+        <td class="pvw-raw" title="${esc(r.raw_name)}" onclick="openRowModal('${r.id}')"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dot};margin-right:5px;vertical-align:middle;flex-shrink:0"></span>${esc(truncate(r.raw_name,32))}</td>
+        <td class="price-cell" style="font-size:11px;white-space:nowrap" onclick="event.stopPropagation()">
+          <div class="editable-cell direct-edit-cell" id="pvw-price-cell-${r.id}" onclick="startFieldEdit('${r.id}','price',event)">
+            <span class="price-val">${priceDisp}</span>
+          </div>
+        </td>
+        <td style="white-space:nowrap" onclick="event.stopPropagation()">
+          <div class="editable-cell" id="pvw-dept-cell-${r.id}">
+            <span class="dept-badge ${dept==='radiology'?'rad':'path'}" style="font-size:8px" title="${dept==='radiology'?'Radiology':'Pathology'}">${dept==='radiology'?'Rad':'Path'}</span>
+            <button class="pencil-btn" title="Edit department" onclick="startFieldEdit('${r.id}','dept',event)">${pvwPencil}</button>
+          </div>
+        </td>
+        <td class="pvw-std ${!r.standard_name?'pvw-empty':''}" onclick="event.stopPropagation()" style="min-width:160px">
+          <div class="editable-cell direct-edit-cell" id="pvw-sn-cell-${r.id}" style="gap:3px" onclick="startSnEdit('${r.id}',event)">
+            <span class="pvw-sn-text" title="${esc(r.standard_name||'')}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${esc(sn)}</span>
+          </div>
+          ${eff==='unmatched'&&r.suggested_name?`<div style="display:flex;align-items:center;gap:4px"><div class="pvw-sn-sugg" style="flex:1;min-width:0" title="Apply: ${esc(r.suggested_name)}" onclick="applyPvwSugg('${r.id}',event)">⚡ ${esc(truncate(r.suggested_name,36))}</div><button style="flex-shrink:0;padding:1px 4px;border:1px solid var(--border-input);border-radius:3px;background:var(--surface);cursor:pointer;font-size:9px;color:var(--muted);line-height:1.4" title="Copy suggestion" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(r.suggested_name)}').then(()=>toast('Copied'))">⎘</button></div>`:''}
+
+        </td>
+        <td class="pvw-conf" onclick="openRowModal('${r.id}')">${_pvwConfBadge(r)}</td>
+        <td style="text-align:center" onclick="openRowModal('${r.id}')"><span class="stat ${eff}" style="font-size:9px;padding:2px 6px">${eff}</span></td>
         <td class="pvw-actions">${_pvwActions(r)}</td>
       </tr>`;
     }).join('')}</tbody>
@@ -1866,8 +2926,9 @@ else{
   renderHistory();renderChat();renderProgress();renderFilesList();
   renderPreviewTable();
   document.getElementById('chat-title').textContent=_ini?.name||'Chat';
-  if(_ini?.stats){document.getElementById('export-btn').classList.remove('hidden');}
+  if(_ini?.stats){document.getElementById('export-btn').classList.remove('hidden');document.getElementById('clear-chat-btn').classList.remove('hidden');}
 }
 </script>
+<input type="file" id="attach-input" accept=".pdf,.xlsx,.xls,.docx,.doc,.csv" multiple onchange="onFilesSelected(this.files)"/>
 </body>
 </html>

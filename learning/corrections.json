@@ -250,5 +250,158 @@
     "old_catalogue_name": "",
     "new_catalogue_name": "Wound Swab AFB Stain Examination",
     "timestamp": "2026-04-18T09:49:32.618051"
+  },
+  {
+    "type": "edited",
+    "provider_name": "HbA1c (Glycosylated Hemoglobin)",
+    "old_catalogue_name": "HbA1C",
+    "new_catalogue_name": "HbA1C",
+    "lab_type": "Pathology",
+    "price": "",
+    "timestamp": "2026-04-18T17:29:50.392921"
+  },
+  {
+    "type": "edited",
+    "provider_name": "Thyroid Stimulating Hormone (TSH)",
+    "old_catalogue_name": "Thyroid Stimulating Hormone (TSH)",
+    "new_catalogue_name": "Thyroid Stimulating Hormone (TSH)",
+    "lab_type": "Pathology",
+    "price": "",
+    "timestamp": "2026-04-18T17:29:51.222026"
+  },
+  {
+    "type": "edited",
+    "provider_name": "Thyroid Stimulating Hormone (TSH)",
+    "old_catalogue_name": "Thyroid Stimulating Hormone (TSH)",
+    "new_catalogue_name": "Thyroid Stimulating Hormone (TSH)",
+    "lab_type": "Pathology",
+    "price": "",
+    "timestamp": "2026-04-18T17:29:52.398244"
+  },
+  {
+    "type": "edited",
+    "provider_name": "Glucose - Post Prandial (PP)",
+    "old_catalogue_name": "Glucose Post Prandial",
+    "new_catalogue_name": "Glucose Post Prandial",
+    "lab_type": "Pathology",
+    "price": "",
+    "timestamp": "2026-04-18T17:29:54.103301"
+  },
+  {
+    "type": "edited",
+    "provider_name": "USG",
+    "old_catalogue_name": "Ultrasound",
+    "new_catalogue_name": "Ultrasound",
+    "lab_type": "Radiology",
+    "price": "",
+    "timestamp": "2026-04-18T17:47:28.974345"
+  },
+  {
+    "type": "edited",
+    "provider_name": "A G Ratio",
+    "old_catalogue_name": "A/G ratio",
+    "new_catalogue_name": "A/G ratio",
+    "lab_type": "Pathology",
+    "price": "160",
+    "timestamp": "2026-04-18T23:29:31.601998"
+  },
+  {
+    "type": "edited",
+    "provider_name": "A G Ratio",
+    "old_catalogue_name": "A/G ratio",
+    "new_catalogue_name": "A/G ratio",
+    "lab_type": "Pathology",
+    "price": "160",
+    "timestamp": "2026-04-18T23:29:48.308500"
+  },
+  {
+    "type": "edited",
+    "provider_name": "BLOOD PARASITES(MP)",
+    "old_catalogue_name": "Malaria Parasite (MP) Detection",
+    "new_catalogue_name": "Malaria Parasite (MP) Detection",
+    "lab_type": "Pathology",
+    "price": "150",
+    "timestamp": "2026-04-18T23:49:00.626761"
+  },
+  {
+    "type": "edited",
+    "provider_name": "BIO CHEMISTRY",
+    "old_catalogue_name": "Biochemistry Profile",
+    "new_catalogue_name": "Biochemistry Profile",
+    "lab_type": "Pathology",
+    "price": "",
+    "timestamp": "2026-04-18T23:49:18.730994"
+  },
+  {
+    "type": "edited",
+    "provider_name": "HIV {Rapid/ Elisa}",
+    "old_catalogue_name": "HIV I & II Antibody Test",
+    "new_catalogue_name": "HIV I & II Antibody Test",
+    "lab_type": "Pathology",
+    "price": "300/600",
+    "timestamp": "2026-04-18T23:57:11.391344"
+  },
+  {
+    "type": "edited",
+    "provider_name": "Troponin-i/Rapid/Quative",
+    "old_catalogue_name": "TlujO69Vamo3iCrL0FTloQYIN8rnA7ej6jKmN8O5glFpcn0t#eyJub25jZSI6IlJwWWw2NUdZWDJDdW0yT205MC1mcFJERGh2VXUyXzYyalBXazg2Z21nWFkiLCJ2ZW5kb3IiOiJtIiwic3VyZmFjZSI6InNoZWV0IiwicGxhdGZvcm0iOiJQQyJ9",
+    "new_catalogue_name": "TlujO69Vamo3iCrL0FTloQYIN8rnA7ej6jKmN8O5glFpcn0t#eyJub25jZSI6IlJwWWw2NUdZWDJDdW0yT205MC1mcFJERGh2VXUyXzYyalBXazg2Z21nWFkiLCJ2ZW5kb3IiOiJtIiwic3VyZmFjZSI6InNoZWV0IiwicGxhdGZvcm0iOiJQQyJ9",
+    "lab_type": "Pathology",
+    "price": "500/1600",
+    "timestamp": "2026-04-19T00:04:00.789373"
+  },
+  {
+    "type": "edited",
+    "provider_name": "Troponin-i/Rapid/Quative",
+    "old_catalogue_name": "Troponin I, Quantitative",
+    "new_catalogue_name": "Troponin I, Quantitative",
+    "lab_type": "Pathology",
+    "price": "500/1600",
+    "timestamp": "2026-04-19T00:04:05.511622"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CLINICAL PATHOLOGY",
+    "old_catalogue_name": "Clinical Pathology Profile",
+    "new_catalogue_name": "Clinical Pathology Profile",
+    "lab_type": "Pathology",
+    "price": "",
+    "timestamp": "2026-04-19T00:04:07.468772"
+  },
+  {
+    "type": "edited",
+    "provider_name": "ASLO {Quatative method }",
+    "old_catalogue_name": "ASLO (Anti-Streptolysin O) Quantitative",
+    "new_catalogue_name": "ASLO (Anti-Streptolysin O) Quantitative",
+    "lab_type": "Pathology",
+    "price": "700",
+    "timestamp": "2026-04-19T00:04:16.786846"
+  },
+  {
+    "type": "edited",
+    "provider_name": "PUS C/s",
+    "old_catalogue_name": "Culture & Sensitivity, Pus",
+    "new_catalogue_name": "Culture & Sensitivity, Pus",
+    "lab_type": "Pathology",
+    "price": "900",
+    "timestamp": "2026-04-19T00:06:02.866531"
+  },
+  {
+    "type": "edited",
+    "provider_name": "A G Ratio",
+    "old_catalogue_name": "A/G ratio",
+    "new_catalogue_name": "A/G ratio",
+    "lab_type": "Pathology",
+    "price": "160",
+    "timestamp": "2026-04-19T10:55:27.297197"
+  },
+  {
+    "type": "edited",
+    "provider_name": "VDRL (HUSBAND)",
+    "old_catalogue_name": "VDRL RPR",
+    "new_catalogue_name": "VDRL RPR",
+    "lab_type": "Pathology",
+    "price": "100",
+    "timestamp": "2026-04-19T12:08:06.971714"
   }
 ]

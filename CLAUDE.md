@@ -13,7 +13,7 @@ Whenever the user shares any file in the conversation — PDF, Excel, image, DOC
 ## Your Job
 
 1. Parse the file to extract all test names
-2. Match them deterministically against `refrences/master_file.xlsx.db` (SQLite) using `scripts/match.py` — called **once**
+2. Match them deterministically against `refrences/Master.csv.db` (SQLite) using `scripts/match.py` — called **once**
 3. Run a single batched semantic pass for anything still UNMATCHED after the script
 4. Write the final output to `output/` following the column structure in `refrences/Output_format.xlsx`
 5. Report back to the user: how many matched, how many unmatched, where the output file is
@@ -35,7 +35,7 @@ Whenever the user shares any file in the conversation — PDF, Excel, image, DOC
 
 `match.py` handles all of the following internally in a single run:
 
-- **Master database**: on first run, reads `master_file.xlsx` and builds a SQLite database at `refrences/master_file.xlsx.db` — all subsequent runs read from the DB directly (skipping the Excel read entirely). The DB auto-rebuilds if `master_file.xlsx` changes (mtime check)
+- **Master database**: on first run, reads `Master.csv` and builds a SQLite database at `refrences/Master.csv.db` — all subsequent runs read from the DB directly (skipping the CSV read entirely). The DB auto-rebuilds if `Master.csv` changes (mtime check)
 - **Pre-normalization**: expands KNOWN_ABBREVIATIONS (`TRBC` → Total RBC, `HVC` → HCV, etc.) and corrects KNOWN_TYPOS (`PSYCHOLOGICAL` → PHYSIOLOGICAL, etc.) before matching
 - **Exact match**: normalized lowercase lookup against `master_file.xlsx.db`
 - **Fallback table**: deterministic regex patterns for pricing tiers, combined procedures, and known acronyms — applied before any fuzzy match:
@@ -118,8 +118,8 @@ When UNMATCHED rows exist, process **all of them together in a single pass** —
 
 | File | Role |
 |------|------|
-| `refrences/master_file.xlsx` | Source data — only read on first run or when changed |
-| `refrences/master_file.xlsx.db` | **SQLite master database** — all matching reads from here, never from the Excel directly |
+| `refrences/Master.csv` | Source data — only read on first run or when changed |
+| `refrences/Master.csv.db` | **SQLite master database** — all matching reads from here, never from the CSV directly |
 | `refrences/Output_format.xlsx` | Output template — defines column structure |
 | `input/` | Where provider files are placed |
 | `output/` | Where standardized output files are saved |

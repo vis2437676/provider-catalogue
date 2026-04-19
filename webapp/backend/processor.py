@@ -249,7 +249,7 @@ def run_match_script(
             writer.writerow([n])
 
     match_script = project_root / ".claude" / "skills" / "process-catalogue" / "scripts" / "match.py"
-    master_file  = project_root / "refrences" / "master_file.xlsx"
+    master_file  = project_root / "refrences" / "Master.csv"
 
     _progress(jobs, job_id, 40, "Running match.py …")
 
@@ -377,30 +377,72 @@ def generate_output_excel(
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment
 
-    tpl_cols = _read_output_template_columns(project_root)
+    # Same columns as the mapping results table UI — used for both Pathology and Radiology sheets
+    TABLE_COLS = [
+        ("provider_name",         "Raw Test Name"),
+        ("price",                 "Price"),
+        ("department",            "Dept"),
+        ("catalogue_name",        "Standard Name"),
+        ("provider_item_name",    "Provider Slug"),
+        ("confidence",            "Confidence"),
+        ("match_type",            "Status"),
+        ("loinc_id",              "LOINC ID"),
+        ("lab_requirement",       "Services Offered"),
+        ("entity_type",           "Catalogue Type"),
+        ("mrp",                   "Partner MRP (\u20b9)"),
+        ("discounted_price",      "Discounted Price (\u20b9)"),
+        ("display_mrp",           "Display MRP (\u20b9)"),
+        ("collection_type",       "Lab Visit"),
+        ("home_collection",       "Home Sample"),
+        ("fasting_required",      "Fasting Required"),
+        ("fasting_hours",         "Fasting Hours"),
+        ("age_range",             "Age Range"),
+        ("gender",                "Gender"),
+        ("minimum_patient",       "Min. Patients"),
+        ("report_tat",            "TAT (Hrs)"),
+        ("alias",                 "Alias"),
+        ("tags",                  "Tags"),
+        ("prescription_required", "Rx Required"),
+        ("precautions",           "Precautions"),
+        ("description",           "Overview"),
+    ]
 
-    # Map internal field names → output column names
-    # Template column detection: try common aliases
-    def _pick(candidates: list[str], default: str) -> str:
-        for c in tpl_cols:
-            if c.lower().strip() in [x.lower() for x in candidates]:
-                return c
-        return default
+    UNMATCHED_COLS = [
+        ("provider_name",         "Raw Test Name"),
+        ("catalogue_name",        "Suggested Standard Name"),
+        ("department",            "Dept"),
+        ("match_type",            "Status"),
+        ("confidence",            "Confidence"),
+    ]
 
-    col_catalogue = _pick(["test name", "item name", "catalogue test name", "standard name"], "Catalogue Test Name")
-    col_provider  = _pick(["provider name", "original name", "provider test name"], "Provider Test Name")
-    col_match     = _pick(["match type", "type"], "Match Type")
-    col_conf      = _pick(["confidence", "score", "confidence score"], "Confidence Score")
+    def _val(row: dict, key):
+        if key is None:
+            return ""
+        if key == "confidence":
+            v = row.get("confidence", 0)
+            return f"{v:.0%}" if v else ""
+        return str(row.get(key, "") or "")
 
-    OUTPUT_COLS = [col_catalogue, col_provider, col_match, col_conf]
+    def _write_sheet(ws, cols, rows, fill_hex, hdr_font):
+        fill = PatternFill("solid", fgColor=fill_hex)
+        for ci, (_, label) in enumerate(cols, 1):
+            cell = ws.cell(row=1, column=ci, value=label)
+            cell.fill = fill
+            cell.font = hdr_font
+            cell.alignment = Alignment(horizontal="center", wrap_text=True)
+        for ri, row in enumerate(rows, 2):
+            for ci, (key, _) in enumerate(cols, 1):
+                ws.cell(row=ri, column=ci, value=_val(row, key))
+        ws.row_dimensions[1].height = 40
+        for col_cells in ws.columns:
+            width = max((len(str(c.value or "")) for c in col_cells), default=10)
+            ws.column_dimensions[col_cells[0].column_letter].width = min(width + 4, 55)
 
-    def _row_to_record(row: dict, status: str) -> dict:
-        return {
-            col_catalogue: row.get("catalogue_name", ""),
-            col_provider:  row.get("provider_name", ""),
-            col_match:     row.get("match_type", status),
-            col_conf:      f"{row.get('confidence', 0):.0%}" if row.get("confidence") else "",
-        }
+    # Split matched rows by department
+    path_rows  = [r for r in matched_rows if (r.get("department") or "").lower() == "pathology"]
+    rad_rows   = [r for r in matched_rows if (r.get("department") or "").lower() == "radiology"]
+    other_rows = [r for r in matched_rows if (r.get("department") or "").lower() not in ("pathology", "radiology")]
+    path_rows += other_rows  # unknown dept falls into Pathology sheet
 
     # Build output path
     stem = re.sub(r"[^a-zA-Z0-9_\- ]", "_", Path(filename).stem)[:50].strip("_")
@@ -409,51 +451,23 @@ def generate_output_excel(
     base_name = f"{stem}_standardized_catalogue.xlsx"
     output_path = output_dir / base_name
 
-    # Avoid overwriting (output-guide.md: append timestamp suffix)
     if output_path.exists():
         from datetime import datetime
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = output_dir / f"{stem}_standardized_catalogue_{ts}.xlsx"
 
+    hdr_font = Font(color="FFFFFF", bold=True)
     wb = openpyxl.Workbook()
 
-    # ── Matched sheet ─────────────────────────────────────────────────────────
-    ws_m = wb.active
-    ws_m.title = "Matched"
-    hdr_fill_m = PatternFill("solid", fgColor="1E3A5F")
-    hdr_font   = Font(color="FFFFFF", bold=True)
+    ws_path = wb.active
+    ws_path.title = "Pathology"
+    _write_sheet(ws_path, TABLE_COLS, path_rows,  "1E3A5F", hdr_font)
 
-    for ci, col in enumerate(OUTPUT_COLS, 1):
-        cell = ws_m.cell(row=1, column=ci, value=col)
-        cell.fill = hdr_fill_m
-        cell.font = hdr_font
-        cell.alignment = Alignment(horizontal="center")
+    ws_rad = wb.create_sheet("Radiology")
+    _write_sheet(ws_rad,  TABLE_COLS, rad_rows,   "14532D", hdr_font)
 
-    for ri, row in enumerate(matched_rows, 2):
-        rec = _row_to_record(row, "MATCHED")
-        for ci, col in enumerate(OUTPUT_COLS, 1):
-            ws_m.cell(row=ri, column=ci, value=rec.get(col, ""))
-
-    # ── Unmatched sheet ───────────────────────────────────────────────────────
     ws_u = wb.create_sheet("UNMATCHED")
-    hdr_fill_u = PatternFill("solid", fgColor="7F1D1D")
-
-    for ci, col in enumerate(OUTPUT_COLS, 1):
-        cell = ws_u.cell(row=1, column=ci, value=col)
-        cell.fill = hdr_fill_u
-        cell.font = hdr_font
-        cell.alignment = Alignment(horizontal="center")
-
-    for ri, row in enumerate(unmatched_rows, 2):
-        rec = _row_to_record(row, "UNMATCHED")
-        for ci, col in enumerate(OUTPUT_COLS, 1):
-            ws_u.cell(row=ri, column=ci, value=rec.get(col, ""))
-
-    # Auto-width
-    for ws in (ws_m, ws_u):
-        for col_cells in ws.columns:
-            width = max((len(str(c.value or "")) for c in col_cells), default=12)
-            ws.column_dimensions[col_cells[0].column_letter].width = min(width + 4, 55)
+    _write_sheet(ws_u,    UNMATCHED_COLS, unmatched_rows, "7F1D1D", hdr_font)
 
     wb.save(str(output_path))
     return str(output_path)

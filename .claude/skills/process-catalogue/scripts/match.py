@@ -1,9 +1,9 @@
 """
 Deterministic fuzzy matching script.
-Matches provider test names against master_file.xlsx using exact + fuzzy logic.
+Matches provider test names against the master catalogue (CSV or Excel) using exact + fuzzy logic.
 
 Usage:
-    python match.py --input <extracted_names.csv> --master <master_file.xlsx> --output <results.csv>
+    python match.py --input <extracted_names.csv> --master <Master.csv> --output <results.csv>
 
 Output columns:
     Provider Test Name | Catalogue Test Name | Match Type | Confidence Score
@@ -725,11 +725,19 @@ def _is_abbreviation(name: str) -> bool:
 # ── Master file loading ───────────────────────────────────────────────────────
 
 _PROVIDER_COL_CANDIDATES  = [
-    "provider_item_name", "Provider Test Name", "provider test name", "test name", "item",
+    "provider_item_name_required", "provider_item_name",
+    "Provider Test Name", "provider test name", "test name", "item",
 ]
 _CATALOGUE_COL_CANDIDATES = [
+    "package_name_required",
     "package_name (standardized catalogue name)", "Catalogue Test Name",
     "catalogue test name", "package_name", "standard name",
+]
+_LAB_REQ_COL_CANDIDATES = [
+    "lab_requirement_required", "lab_requirement", "lab type", "department",
+]
+_MRP_COL_CANDIDATES = [
+    "provider_mrp_required", "provider_mrp", "mrp", "price", "rate",
 ]
 
 
@@ -793,30 +801,15 @@ def _build_master_index(rows: list[tuple], df: pd.DataFrame, db_path: str | None
 
 
 def load_master(master_path: str, provider_col: str = None, catalogue_col: str = None) -> dict:
-    """Load master_file.xlsx and return a fully pre-built matching index.
+    """Load master file (CSV or Excel) and return a fully pre-built matching index.
 
-    On first run (or when master_file.xlsx changes), reads the Excel file,
-    normalises all names, and writes everything to a SQLite database at
-    <master_path>.db — then returns the in-memory index.
+    On first run (or when the master file changes), reads the file, normalises
+    all names, and writes everything to a SQLite database at <master_path>.db.
 
-    On every subsequent run, loads all rows from the SQLite database directly
-    (skipping the Excel read and normalization passes entirely) and rebuilds
-    the in-memory index from those rows.  The database is invalidated and
-    rebuilt automatically whenever master_file.xlsx is modified (mtime check
-    stored in the metadata table).
+    On every subsequent run, loads all rows from the SQLite database directly.
+    The database is invalidated and rebuilt automatically on mtime change.
 
-    Database location:  <master_path>.db   e.g. refrences/master_file.xlsx.db
-
-    Schema
-    ------
-    metadata(key TEXT PK, value TEXT)
-        'mtime'  — last-seen modification time of master_file.xlsx
-        'built'  — ISO timestamp of when the DB was last built
-
-    master(id INT PK, provider_name, catalogue_name,
-           normalized_provider, normalized_catalogue)
-        Indexes on normalized_provider and normalized_catalogue for O(log n)
-        lookups when querying the DB directly.
+    Database location:  <master_path>.db   e.g. refrences/Master.csv.db
 
     Returns dict with keys:
         df             — DataFrame for any code that accesses master_df directly
@@ -826,35 +819,40 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
         norm_cats      — {normalized_catalogue → raw_cat}  (for Strategy B/C/A)
     """
     db_path = master_path + ".db"
+    current_mtime = os.path.getmtime(master_path)
 
     # ── Try loading from existing SQLite DB ───────────────────────────────────
     try:
-        current_mtime = os.path.getmtime(master_path)
         if os.path.exists(db_path):
             conn = sqlite3.connect(db_path)
+            # Check schema has extra_cols (version guard)
+            cols_info = conn.execute("PRAGMA table_info(master)").fetchall()
+            col_names = {r[1] for r in cols_info}
             row = conn.execute(
                 "SELECT value FROM metadata WHERE key='mtime'"
             ).fetchone()
-            if row and float(row[0]) == current_mtime:
+            if row and float(row[0]) == current_mtime and "lab_requirement" in col_names:
                 db_rows = conn.execute(
                     "SELECT provider_name, catalogue_name, "
                     "normalized_provider, normalized_catalogue "
                     "FROM master ORDER BY id"
                 ).fetchall()
                 conn.close()
-                # Reconstruct lightweight DataFrame from DB rows (no Excel read)
                 df = pd.DataFrame(db_rows, columns=[
                     "Provider Test Name", "Catalogue Test Name",
                     "_normalized_key", "_normalized_catalogue_key",
                 ])
-                conn.close()
                 return _build_master_index(db_rows, df, db_path=db_path)
             conn.close()
     except Exception:
         pass
 
-    # ── Build from Excel (first run or master_file changed) ───────────────────
-    df = pd.read_excel(master_path)
+    # ── Build from file (first run or master file changed) ────────────────────
+    ext = os.path.splitext(master_path)[1].lower()
+    if ext == ".csv":
+        df = pd.read_csv(master_path, dtype=str, low_memory=False)
+    else:
+        df = pd.read_excel(master_path)
     if len(df.columns) < 2:
         print(f"ERROR: master file must have at least 2 columns, found {len(df.columns)}",
               file=sys.stderr)
@@ -870,23 +868,76 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
 
     pcol = provider_col or find_col(_PROVIDER_COL_CANDIDATES)
     ccol = catalogue_col or find_col(_CATALOGUE_COL_CANDIDATES)
+    lcol = find_col(_LAB_REQ_COL_CANDIDATES)
+    mcol = find_col(_MRP_COL_CANDIDATES)
 
     if pcol and ccol:
-        df = df[[pcol, ccol]].copy()
-        df.columns = ["Provider Test Name", "Catalogue Test Name"]
+        keep = [pcol, ccol]
+        if lcol: keep.append(lcol)
+        if mcol: keep.append(mcol)
+        df = df[keep].copy()
+        rename = {pcol: "Provider Test Name", ccol: "Catalogue Test Name"}
+        if lcol: rename[lcol] = "lab_requirement"
+        if mcol: rename[mcol] = "mrp"
+        df = df.rename(columns=rename)
     else:
         df = df.iloc[:, :2].copy()
         df.columns = ["Provider Test Name", "Catalogue Test Name"]
 
     df = df.dropna(subset=["Provider Test Name", "Catalogue Test Name"])
+    if "lab_requirement" not in df.columns:
+        df["lab_requirement"] = ""
+    if "mrp" not in df.columns:
+        df["mrp"] = ""
+    df["lab_requirement"] = df["lab_requirement"].fillna("").astype(str)
+    df["mrp"] = df["mrp"].fillna("").astype(str)
     df["_normalized_key"]           = df["Provider Test Name"].apply(normalize)
     df["_normalized_catalogue_key"] = df["Catalogue Test Name"].apply(normalize_catalogue)
+
+    # ── Collect detail columns for master_details table ──────────────────────
+    # Re-read raw df to get all columns (we already sliced df above)
+    raw_df_full = None
+    try:
+        ext2 = os.path.splitext(master_path)[1].lower()
+        if ext2 == ".csv":
+            raw_df_full = pd.read_csv(master_path, dtype=str, low_memory=False)
+        else:
+            raw_df_full = pd.read_excel(master_path, dtype=str)
+    except Exception:
+        raw_df_full = None
+
+    # Columns from Master.csv that map to Output Format fields
+    _DETAIL_COL_MAP = [
+        ("LOINC_ID",                          "loinc_id"),
+        ("DESCRIPTION_REQUIRED",              "description"),
+        ("PRECAUTIONS",                        "precautions"),
+        ("FASTING_REQUIRED",                   "fasting_required"),
+        ("FASTING_HOURS",                      "fasting_hours"),
+        ("COLLECTION_TYPE_REQUIRED",           "collection_type"),
+        ("PACKAGE_COLLECTION_TYPE_REQUIRED",   "home_collection"),
+        ("PROVIDER_MRP_REQUIRED",              "mrp"),
+        ("PROVIDER_DISCOUNTED_PRICE_REQUIRED", "discounted_price"),
+        ("DISPLAY_MRP_REQUIRED",               "display_mrp"),
+        ("DISPLAY_DISCOUNTED_PRICE_REQUIRED",  "display_discounted_price"),
+        ("ENTITY_TYPE_REQUIRED",               "entity_type"),
+        ("LAB_REQUIREMENT_REQUIRED",           "lab_requirement"),
+        ("AGE_RANGE",                          "age_range"),
+        ("GENDER",                             "gender"),
+        ("MINIMUM_PATIENT",                    "minimum_patient"),
+        ("ALIAS",                              "alias"),
+        ("TAGS",                               "tags"),
+        ("REPORT_GENERATION_TAT",              "report_tat"),
+        ("IS_PRESCRIPTION_REQUIRED",           "prescription_required"),
+        ("PROVIDER_ITEM_NAME_REQUIRED",        "provider_item_name"),
+        ("PACKAGE_NAME_REQUIRED",              "catalogue_name"),
+    ]
 
     # ── Write to SQLite ───────────────────────────────────────────────────────
     try:
         import datetime
         conn = sqlite3.connect(db_path)
         conn.execute("DROP TABLE IF EXISTS master")
+        conn.execute("DROP TABLE IF EXISTS master_details")
         conn.execute("DROP TABLE IF EXISTS metadata")
         conn.execute("""
             CREATE TABLE metadata (
@@ -900,7 +951,9 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
                 provider_name        TEXT NOT NULL,
                 catalogue_name       TEXT NOT NULL,
                 normalized_provider  TEXT NOT NULL,
-                normalized_catalogue TEXT NOT NULL
+                normalized_catalogue TEXT NOT NULL,
+                lab_requirement      TEXT NOT NULL DEFAULT '',
+                mrp                  TEXT NOT NULL DEFAULT ''
             )
         """)
         conn.execute("CREATE INDEX idx_norm_prov ON master(normalized_provider)")
@@ -913,17 +966,90 @@ def load_master(master_path: str, provider_col: str = None, catalogue_col: str =
                 confidence       REAL NOT NULL
             )
         """)
+        # master_details — one row per unique catalogue_name, all Output Format fields
+        conn.execute("""
+            CREATE TABLE master_details (
+                catalogue_name           TEXT PRIMARY KEY,
+                provider_item_name       TEXT DEFAULT '',
+                loinc_id                 TEXT DEFAULT '',
+                description              TEXT DEFAULT '',
+                precautions              TEXT DEFAULT '',
+                fasting_required         TEXT DEFAULT '',
+                fasting_hours            TEXT DEFAULT '',
+                collection_type          TEXT DEFAULT '',
+                home_collection          TEXT DEFAULT '',
+                mrp                      TEXT DEFAULT '',
+                discounted_price         TEXT DEFAULT '',
+                display_mrp              TEXT DEFAULT '',
+                display_discounted_price TEXT DEFAULT '',
+                entity_type              TEXT DEFAULT '',
+                lab_requirement          TEXT DEFAULT '',
+                age_range                TEXT DEFAULT '',
+                gender                   TEXT DEFAULT '',
+                minimum_patient          TEXT DEFAULT '',
+                alias                    TEXT DEFAULT '',
+                tags                     TEXT DEFAULT '',
+                report_tat               TEXT DEFAULT '',
+                prescription_required    TEXT DEFAULT ''
+            )
+        """)
+        conn.execute("CREATE INDEX idx_det_cat ON master_details(catalogue_name)")
+
         conn.executemany(
             "INSERT INTO master "
-            "(provider_name, catalogue_name, normalized_provider, normalized_catalogue) "
-            "VALUES (?, ?, ?, ?)",
+            "(provider_name, catalogue_name, normalized_provider, normalized_catalogue, "
+            "lab_requirement, mrp) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             zip(
                 df["Provider Test Name"],
                 df["Catalogue Test Name"],
                 df["_normalized_key"],
                 df["_normalized_catalogue_key"],
+                df["lab_requirement"],
+                df["mrp"],
             ),
         )
+
+        # Build master_details rows from raw_df_full
+        if raw_df_full is not None:
+            cols_lower_full = {c.lower().strip(): c for c in raw_df_full.columns}
+            def _get_col(src_name):
+                return cols_lower_full.get(src_name.lower().strip())
+
+            _DETAIL_KEYS = [
+                "catalogue_name","provider_item_name","loinc_id","description",
+                "precautions","fasting_required","fasting_hours","collection_type",
+                "home_collection","mrp","discounted_price","display_mrp",
+                "display_discounted_price","entity_type","lab_requirement",
+                "age_range","gender","minimum_patient","alias","tags",
+                "report_tat","prescription_required",
+            ]
+            cat_col_full = _get_col("PACKAGE_NAME_REQUIRED")
+            if cat_col_full:
+                # Build detail_df: rename columns to dest names, deduplicate by catalogue_name
+                keep_src = [cat_col_full]
+                rename_map = {cat_col_full: "catalogue_name"}
+                for src, dest in _DETAIL_COL_MAP:
+                    col = _get_col(src)
+                    if col and col not in rename_map:
+                        keep_src.append(col)
+                        rename_map[col] = dest
+                detail_df = raw_df_full[keep_src].rename(columns=rename_map).copy()
+                detail_df = detail_df.drop_duplicates(subset=["catalogue_name"])
+                detail_df = detail_df[detail_df["catalogue_name"].notna() & (detail_df["catalogue_name"] != "")]
+                for k in _DETAIL_KEYS:
+                    if k not in detail_df.columns:
+                        detail_df[k] = ""
+                detail_df = detail_df[_DETAIL_KEYS].fillna("").astype(str)
+                detail_df = detail_df.replace({"nan": "", "None": "", "NaT": ""})
+                detail_rows = detail_df.to_dict("records")
+                if detail_rows:
+                    named_ph = "(" + ",".join(f":{k}" for k in _DETAIL_KEYS) + ")"
+                    conn.executemany(
+                        f"INSERT OR IGNORE INTO master_details VALUES {named_ph}",
+                        [{k: v.get(k, "") for k in _DETAIL_KEYS} for v in detail_rows],
+                    )
+
         conn.execute("INSERT INTO metadata VALUES ('mtime', ?)", (str(current_mtime),))
         conn.execute("INSERT INTO metadata VALUES ('built', ?)",
                      (datetime.datetime.now().isoformat(),))

@@ -1,8 +1,9 @@
+
 """
 Lab Test Mapping Console — FastAPI backend
-Reuses existing processor.py / learner.py; chat powered by OpenAI GPT-4o.
+Reuses existing processor.py / learner.py; chat powered by Claude (Anthropic).
 
-Run:  uvicorn server:app --reload --port 8001
+Run:  uvicorn server:app --reload --port 8007
 """
 from __future__ import annotations
 
@@ -26,7 +27,6 @@ if _env_file.exists():
 import sqlite3
 import httpx
 import anthropic as anthropic_sdk
-from openai import OpenAI
 from rapidfuzz import process as fuzz_process, fuzz
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -49,13 +49,7 @@ print(f"[STARTUP] Loading server.py from: {__file__}", flush=True)
 app = FastAPI(title="Lab Test Mapping Console", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# GPT-4o — chat only
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
-    http_client=httpx.Client(verify=False),
-)
-
-# Claude Sonnet — parsing + semantic recovery (accuracy-loop-guide.md)
+# Claude — chat + parsing + semantic recovery
 claude = anthropic_sdk.Anthropic(
     api_key=os.environ.get("ANTHROPIC_API_KEY"),
     http_client=httpx.Client(verify=False),
@@ -83,6 +77,16 @@ _DEPT_COLS_SET = {
     "department", "dept", "category", "section", "division", "lab type", "lab",
 }
 
+_PRICE_KW_RE = re.compile(
+    r'\b(price|rate|mrp|amount|charges|cost)\b', re.IGNORECASE
+)
+
+
+def _is_price_col(header: str) -> bool:
+    """True if header looks like a price column — handles ₹, Rs, (Rs.), etc."""
+    h = str(header).strip().lower()
+    return h in _PRICE_COLS_SET or bool(_PRICE_KW_RE.search(h))
+
 
 # ── In-memory state ────────────────────────────────────────────────────────────
 jobs: dict[str, dict[str, Any]] = {}          # job_id → job data
@@ -94,9 +98,9 @@ CACHE_DIR.mkdir(exist_ok=True)
 
 
 def _save_job(job_id: str) -> None:
-    """Write completed job mappings + stats to disk."""
+    """Write job mappings + stats to disk."""
     job = jobs.get(job_id)
-    if not job or job.get("status") != "done":
+    if not job:
         return
     payload = {
         "job_id":      job_id,
@@ -172,30 +176,42 @@ def _build_system(job_id: str | None, client_mappings: list[dict] | None = None)
     client_mappings: rows sent by the frontend (always fresh, survives server restart).
     Falls back to in-memory jobs dict if not provided.
     """
-    claude_md = (PROJECT_ROOT / "CLAUDE.md").read_text(encoding="utf-8") if (PROJECT_ROOT / "CLAUDE.md").exists() else ""
+    # Deliberately exclude CLAUDE.md — it references master_file/pipeline internals
+    # which bias GPT-4o toward catalogue lookups instead of pure medical judgment.
+    claude_md = ""
 
     persona = """
----
-## Mapping Console Assistant
+## Medical Assistant & Mapping Console
 
-You are embedded in a Lab Test Mapping Console UI.
-Your role: help the user review, correct and approve lab test name mappings.
+You are a knowledgeable medical assistant embedded in a Lab Test Mapping Console.
+You have TWO roles — switch between them based on what the user is asking:
 
-### CRITICAL RULES — follow these without exception
-1. You NEVER ask for row IDs or UUIDs. Ever. The system matches rows by raw_name automatically.
-2. When a user says "update X to Y" or "change X to Y" — emit the action block IN THE SAME RESPONSE. Do not say "I'll update" and then stop. The action block must appear in the same message.
-3. You identify rows ONLY by their `raw_name` string. Copy it exactly from the mapping data below.
-4. Do NOT say "please provide the UUID" or "I need the row ID". You have everything you need in the mapping data.
-5. If the user refers to a test name (even approximately), find the closest match in raw_name and act on it immediately.
-6. NEVER promise to make a change without including the action block in that same response.
-7. You CAN and MUST update the standard name of ANY row — matched, unmatched, or any other status. The action block works for ALL rows regardless of status. "matched" rows are fully editable. Do NOT say you cannot update a matched row.
-8. The mapping snapshot below contains ALL rows. Every single row is editable. Never say a row is not visible or not in scope.
+### Role 1 — Medical Expert
+For ANY medical question (symptoms, diseases, lab tests, radiology, drugs, physiology, clinical guidelines, normal ranges, what a test diagnoses, etc.) — answer directly and thoroughly using your own medical knowledge. Do NOT deflect, do NOT say "consult a doctor", do NOT say it's outside your scope. Give clear, accurate, clinically useful answers. You are the expert.
 
-### How to respond
-- Confirm what you're changing in one sentence, then emit the action block.
-- Never emit an action block for general explanations — only when making concrete changes.
+### Role 2 — Mapping Console Assistant
+For mapping-related tasks (review, correct, approve, revalidate lab test name mappings) — follow the rules below.
 
-### Action block format
+### OUTPUT FORMAT RULE — applies to every mapping-related response
+Whenever you show mapping data, analysis, comparisons, or validation results — ALWAYS use a markdown table. Never use bullet lists for mapping rows. No exceptions.
+
+For validation/revalidation responses, the table MUST have these columns:
+| Raw Name | Current Standard Name | Confidence | Verdict | Issue | Proposed Fix |
+
+For simple update confirmations, use:
+| Raw Name | Updated Standard Name | Change Made |
+
+### MAPPING RULES — follow these without exception
+1. You NEVER ask for row IDs or UUIDs. The system matches rows by raw_name automatically.
+2. When a user says "update X to Y" or "change X to Y" — emit the action block IN THE SAME RESPONSE.
+3. Identify rows ONLY by their `raw_name` string. Copy it exactly from the mapping data below.
+4. If the user refers to a test name (even approximately), find the closest match in raw_name and act on it immediately.
+5. NEVER promise a change without including the action block in that same response.
+6. You CAN update ANY row — matched, unmatched, or any status.
+7. Every row in the snapshot is editable. Never say a row is out of scope.
+8. NEVER end with "let me know if you'd like me to update" or "if you would like me to implement" — always state your verdict and ask "Shall I apply these X corrections?" directly.
+
+### Action block format (mapping changes only)
 ```action
 {
   "type": "update_mappings",
@@ -206,11 +222,89 @@ Your role: help the user review, correct and approve lab test name mappings.
   ]
 }
 ```
-
-- `field = "catalogue_name"` → sets the standard name. Works on ALL rows — matched, unmatched, any status. Always pair with a `status = "matched"` change for the same raw_name.
+Supported fields — ALL are fully implemented and writable:
+- `field = "catalogue_name"` → sets the standard test name. NEVER use this to change department.
 - `field = "status"` → "matched" | "unmatched" | "rejected"
-- Copy `raw_name` exactly as it appears in the mapping data. Do not paraphrase or shorten it.
-- IMPORTANT: You are allowed and expected to update already-matched rows. If a user says "change Complete Blood Count CBC to CBC", emit the action block immediately — do not say it's not possible.
+- `field = "price"` → price as a numeric string e.g. "1500"
+- `field = "lab_type"` → ONLY "Radiology" or "Pathology". THIS is the ONLY field for department changes.
+- `field = "provider_item_name"` → provider's internal name / slug
+- `field = "loinc_id"` → LOINC code string
+- `field = "lab_requirement"` → services offered e.g. "Blood", "Urine"
+- `field = "entity_type"` → catalogue type e.g. "Pathology", "Radiology"
+- `field = "mrp"` → partner MRP as string e.g. "500"
+- `field = "discounted_price"` → discounted price as string
+- `field = "display_mrp"` → display MRP as string
+- `field = "collection_type"` → "Lab" | "Home Collection" | "Hybrid"
+- `field = "home_collection"` → "Yes" or "No"
+- `field = "fasting_required"` → "Yes" or "No"
+- `field = "fasting_hours"` → fasting duration e.g. "8-12 hours fasting is mandatory"
+- `field = "age_range"` → e.g. "All ages" or "18-65"
+- `field = "gender"` → "Male" | "Female" | "Both"
+- `field = "minimum_patient"` → minimum sample count as string e.g. "1"
+- `field = "report_tat"` → TAT in hours as string e.g. "24"
+- `field = "alias"` → comma-separated aliases
+- `field = "tags"` → comma-separated tags
+- `field = "prescription_required"` → "Yes" or "No"
+- `field = "precautions"` → precautions/instructions text
+- `field = "description"` → overview/description text
+
+**CRITICAL — department changes MUST use `lab_type`:**
+When user says "change dept to Pathology" or "change department from Radiology to Pathology":
+```action
+{
+  "type": "update_mappings",
+  "summary": "Changed department to Pathology",
+  "changes": [
+    {"raw_name": "CT Head - Without Contrast", "field": "lab_type", "value": "Pathology"}
+  ]
+}
+```
+NEVER use `catalogue_name` or `status` to encode a department change. `lab_type` is the ONLY correct field.
+Copy `raw_name` exactly as it appears in the mapping data.
+
+### Revalidation instructions
+When the user asks to "revalidate", "validate low confidence", "verify accuracy", "check mappings", or anything similar:
+
+**You are a senior radiologist/pathologist reviewing this mapping sheet. Use ONLY your own medical knowledge — do NOT reference any master file, catalogue list, or external source.**
+
+**STRICT TWO-STEP PROCESS:**
+- **Step 1 (Analysis):** Evaluate every row. State your verdict. Propose fixes. Ask for approval. Do NOT emit an action block.
+- **Step 2 (Apply):** Only after the user explicitly says yes/approve/go ahead — emit the action block. Never before.
+
+**⚠️ In Step 1, you MUST NOT include any ```action``` block. It will be applied immediately without user review. Only include the action block in Step 2.**
+
+Use the validation table format defined in the OUTPUT FORMAT RULE above (Raw Name | Current Standard Name | Confidence | Verdict | Issue | Proposed Fix).
+- Verdict: ✅ Correct or ❌ Wrong
+- Issue: blank for correct rows; one-phrase reason for wrong ones (e.g. "contrast mismatch", "wrong modality")
+- Proposed Fix: blank for correct rows; your corrected standard name for wrong ones
+
+Medical rules to apply:
+- "without contrast" / "plain" in raw_name → standard_name MUST NOT contain "& Contrast" — WRONG if it does. Proposed fix: use the Plain-only name.
+- CT in raw_name → standard_name must be CT, not MRI — completely different modality. WRONG if MRI.
+- MRI in raw_name → standard_name must be MRI, not CT. WRONG if CT.
+- USG/Ultrasound → standard_name must be USG-based. WRONG if X-Ray or CT.
+- Body part must match: chest ≠ abdomen, pelvis ≠ spine.
+- "Guided" procedures must retain the modality (USG guided, CT guided).
+
+Known errors to catch (examples):
+- "CT Scan Chest Without Contrast" → "CT Scan Chest Plain & Contrast" ❌ contrast mismatch → Proposed: "CT Scan Chest Single Plain"
+- "C.T scan PELVIS without contrast" → "MRI Pelvis Plain" ❌ modality mismatch → Proposed: "CT Pelvis Plain"
+- "CT Temporal Bone Without Contrast" → "CT Temporal Bone Plain & Contrast" ❌ contrast mismatch → Proposed: "CT Temporal Bone Plain"
+
+After your row-by-row analysis:
+1. State: "Found X errors, Y look correct."
+2. Ask: "Shall I apply all X corrections?" — STOP HERE. No action block.
+3. Only after user approval → emit the action block covering all corrections.
+
+### Conversational next-step guidance
+After EVERY response — whether you just answered a medical question, made a mapping change, or revalidated mappings — end with a short, natural follow-up suggestion. Keep it to 1–2 sentences. Make it feel like a real conversation, not a bullet list. Examples of tone:
+- After a mapping change: "Want me to check the rest of the unmatched rows and suggest fixes for those too?"
+- After answering a medical question: "Would you like me to cross-check if any of the tests in this catalogue relate to that condition?"
+- After revalidation: "I found X issues and fixed them — want me to do the same for the Radiology tests specifically?"
+- After the user just uploads/opens a job: "I can see X unmatched rows — want me to take a first pass at resolving those?"
+- If the user seems done: "Looks like you're in good shape — ready to export the final catalogue?"
+
+The suggestion must be DIRECTLY relevant to what was just discussed or what the mapping data shows. Never repeat the same suggestion twice in a row. Keep the tone helpful and brief — like a knowledgeable colleague checking in, not a bot reciting options.
 
 ### Current mapping snapshot
 """
@@ -232,8 +326,9 @@ Your role: help the user review, correct and approve lab test name mappings.
             return {
                 "raw_name":      _strip_price(r.get("raw_name", "")),
                 "standard_name": r.get("standard_name", ""),
-                "status":        r.get("status", ""),
+                "match_type":    r.get("match_type", ""),
                 "confidence":    round(float(r.get("confidence", 0)), 2),
+                "lab_type":      r.get("lab_type", ""),
             }
 
         snapshot = f"""
@@ -300,12 +395,14 @@ Your ONLY job: extract raw provider test names from the content provided.
 
 RULES (from parsing-guide.md):
 - Return ONLY JSON: {"test_names": ["name1", "name2", ...]}
-- Strip out: prices (Rs/RS + number), codes, units, section headers, page numbers, totals
-- Skip rows that are clearly section dividers (e.g. "MRI CHARGES", "TEST NAME:-", "CT CHARGES", "TEST CHARGES")
-- Skip column headers (e.g. "Sr No", "Test Name", "Rate", "Amount")
+- Strip out: prices (Rs/RS + number), codes, units, page numbers, totals
+- Include tests from ALL sections regardless of section heading — "OTHER FACILITIES", "SPECIAL TESTS", "RADIOLOGY", "PACKAGES", etc. are all valid sections containing real tests
+- Skip rows that are ONLY section headings with no test name (e.g. rows that say only "MRI CHARGES", "TEST NAME:-", "HAEMATOLOGY", "BIO CHEMISTRY", "SEROLOGY" with no actual test)
+- Skip column headers (e.g. "Sr No", "Test Name", "Rate", "Amount", "Investigations", "TAT")
 - Preserve original casing and spelling — normalization happens in match.py
 - Remove duplicates
 - Each test name as a separate entry
+- Include tests with non-numeric prices like "As per Packages", "Rs 300 per Film", "Rs 300 - Rs 500"
 """
 
 
@@ -335,9 +432,16 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
         "provider test name",
         "partner test name",
         "test name",
+        "investigations",
+        "investigation",
+        "test / investigation",
+        "investigation name",
         "item name",
         "item",
         "test",
+        "particulars",
+        "services",
+        "service name",
         "description",
         "name",
     ]
@@ -379,12 +483,31 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
         price_col = None
         dept_col  = None
         for cl_key, orig_col in cols_lower.items():
-            if price_col is None and cl_key in _PRICE_COLS_SET:
+            if price_col is None and _is_price_col(cl_key):
                 price_col = orig_col
             if dept_col is None and cl_key in _DEPT_COLS_SET:
                 dept_col = orig_col
 
         if matched_col:
+            # Detect serial-number column (Si/No, Sr.No, S.No, No., #, SN, etc.)
+            _SR_COL_PATS = re.compile(
+                r'^(s\.?\s*[il][\./]?\s*no\.?|sr\.?\s*no\.?|s\.?\s*no\.?|no\.?|#|sn|sl\.?\s*no\.?|serial)$',
+                re.IGNORECASE
+            )
+            sr_col = None
+            for ck, orig_c in cols_lower.items():
+                if _SR_COL_PATS.match(ck.strip()):
+                    sr_col = orig_c
+                    break
+            # If no labelled sr col, use the first numeric-looking column
+            if sr_col is None:
+                for orig_c in df.columns:
+                    col_vals = df[orig_c].dropna()
+                    numeric_count = sum(1 for v in col_vals if str(v).strip().replace('.','',1).isdigit())
+                    if numeric_count >= len(col_vals) * 0.5 and len(col_vals) > 0:
+                        sr_col = orig_c
+                        break
+
             for _, row_data in df.iterrows():
                 raw_val = row_data.get(matched_col)
                 if raw_val is None or (isinstance(raw_val, float) and _math.isnan(raw_val)):
@@ -392,6 +515,12 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
                 name = str(raw_val).strip()
                 if not name or name.lower() in seen:
                     continue
+                # Skip section-header rows: Sr col is empty AND name has no price, no digits (pure label)
+                if sr_col is not None:
+                    sr_val = row_data.get(sr_col)
+                    sr_empty = sr_val is None or (isinstance(sr_val, float) and _math.isnan(sr_val)) or str(sr_val).strip() in ('', 'nan')
+                    if sr_empty:
+                        continue  # section header row — no serial number
                 # Price
                 price_val = ""
                 if price_col is not None:
@@ -579,7 +708,7 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                                 if cl in _PARAM_COLS and header_col_idx is None:
                                     header_row_idx = ri
                                     header_col_idx = ci
-                                if cl in _PRICE_COLS_SET and price_idx is None:
+                                if _is_price_col(cl) and price_idx is None:
                                     price_idx = ci
                                 if cl in _DEPT_COLS_SET and dept_idx is None:
                                     dept_idx = ci
@@ -766,7 +895,7 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                             if _hcol is None and cl in _PARAM_COLS_W:
                                 _hcol = ci
                                 _hrow = ri
-                            if _pcol is None and cl in _PRICE_COLS_SET:
+                            if _pcol is None and _is_price_col(cl):
                                 _pcol = ci
                             if _dcol is None and cl in _DEPT_COLS_SET:
                                 _dcol = ci
@@ -943,8 +1072,12 @@ def _load_skill_context() -> str:
     return "\n\n---\n\n".join(parts)
 
 
+def _master_db_path() -> Path:
+    return PROJECT_ROOT / "refrences" / "Master.csv.db"
+
+
 def _load_catalogue_names() -> list[str]:
-    db_path = PROJECT_ROOT / "refrences" / "master_file.xlsx.db"
+    db_path = _master_db_path()
     if not db_path.exists():
         return []
     try:
@@ -1113,6 +1246,37 @@ def _process_job(job_id: str, file_path: str):
             else:
                 matched.append(item)
 
+        # ── Apply past user corrections ───────────────────────────────────────
+        corr_path = PROJECT_ROOT / "learning" / "corrections.json"
+        if corr_path.exists():
+            try:
+                corrections_data = json.loads(corr_path.read_text(encoding="utf-8"))
+                # Build lookup: normalized provider name → {standard_name, lab_type, price}
+                corr_lookup: dict[str, dict] = {}
+                for c in corrections_data:
+                    pn = str(c.get("provider_name", "")).strip().lower()
+                    if pn and c.get("new_catalogue_name"):
+                        corr_lookup[pn] = {
+                            "standard_name": c["new_catalogue_name"],
+                            "lab_type":      c.get("lab_type", ""),
+                            "price":         c.get("price", ""),
+                        }
+                # Apply to all items (matched + unmatched)
+                for item in matched + unmatched:
+                    key = item.get("provider_name", "").strip().lower()
+                    if key in corr_lookup:
+                        override = corr_lookup[key]
+                        item["standard_name"]  = override["standard_name"]
+                        item["catalogue_name"] = override["standard_name"]
+                        item["match_type"]     = "correction"
+                        item["confidence"]     = 1.0
+                        if override.get("lab_type"):
+                            item["lab_type"] = override["lab_type"]
+                        if override.get("price"):
+                            item["price"] = override["price"]
+            except Exception as _ce:
+                print(f"[WARN] Could not apply corrections: {_ce}", flush=True)
+
         # ── Semantic recovery pass ────────────────────────────────────────────
         if unmatched:
             _progress(job_id, 85, f"Semantic recovery for {len(unmatched)} unmatched rows…")
@@ -1192,6 +1356,7 @@ class ChatBody(BaseModel):
     job_id: str
     message: str
     mappings: list[dict] | None = None   # frontend sends current S.mappings
+    reset_history: bool = False          # clear session history before this turn
 
 
 @app.post("/api/chat")
@@ -1199,19 +1364,22 @@ async def chat(body: ChatBody):
     # Accept chat even if job is no longer in memory (server restart)
     # — the frontend sends its own mappings so the snapshot is always fresh
 
+    if body.reset_history:
+        sessions[body.job_id] = []
     history = sessions.setdefault(body.job_id, [])
     history.append({"role": "user", "content": body.message})
 
     try:
-        messages = [{"role": "system", "content": _build_system(body.job_id, body.mappings)}] + history
+        system_prompt = _build_system(body.job_id, body.mappings)
 
-        resp = client.chat.completions.create(
-            model="gpt-4o",
-            max_tokens=2048,
-            messages=messages,
+        resp = claude.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=8192,
+            system=system_prompt,
+            messages=history,
         )
 
-        raw    = resp.choices[0].message.content
+        raw    = resp.content[0].text
         action = _extract_action(raw)
 
         # If model promised a change but didn't emit an action block, force a retry
@@ -1222,7 +1390,6 @@ async def chat(body: ChatBody):
             r"i can (update|change|fix|make)",
             re.IGNORECASE,
         )
-        # Also detect when model refuses to update a row (e.g. "I don't have visibility")
         _REFUSAL = re.compile(
             r"don'?t have (visibility|access|information|data)|"
             r"not (listed|included|available|visible)|"
@@ -1235,34 +1402,53 @@ async def chat(body: ChatBody):
         )
         user_wants_change = re.search(r"\b(update|change|set|correct|fix|map)\b", body.message, re.IGNORECASE)
 
-        needs_retry = not action and (_UPDATE_INTENT.search(raw) or (user_wants_change and _REFUSAL.search(raw)))
+        _AWAITING_APPROVAL = re.compile(
+            r"shall i apply|should i apply|want me to apply|go ahead and apply|"
+            r"apply (all|these|the) \d+ correction|apply (these|the) changes|"
+            r"confirm (and i|to apply)|ready to apply|proceed with",
+            re.IGNORECASE,
+        )
+        waiting_for_approval = bool(_AWAITING_APPROVAL.search(raw))
+
+        needs_retry = (not action and not waiting_for_approval
+                       and (_UPDATE_INTENT.search(raw) or (user_wants_change and _REFUSAL.search(raw))))
         if needs_retry:
-            system_prompt = _build_system(body.job_id, body.mappings)
-            retry_messages = (
-                [{"role": "system", "content": system_prompt}]
-                + history  # includes the assistant turn we just got
-                + [{"role": "user", "content":
+            retry_history = history + [
+                {"role": "assistant", "content": raw},
+                {"role": "user", "content":
                     "The mapping snapshot I sent contains ALL rows — matched and unmatched. "
                     "You are allowed to update ANY row regardless of its current status. "
                     "Please emit the action block NOW to apply the requested change. "
-                    "Use the exact raw_name from the mapping data. Do not explain further."}]
+                    "Use the exact raw_name from the mapping data. Do not explain further."},
+            ]
+            resp2  = claude.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=512,
+                system=system_prompt,
+                messages=retry_history,
             )
-            resp2  = client.chat.completions.create(model="gpt-4o", max_tokens=512, messages=retry_messages)
-            raw2   = resp2.choices[0].message.content
+            raw2   = resp2.content[0].text
             action = _extract_action(raw2)
 
         display = _strip_action(raw)
         history.append({"role": "assistant", "content": raw})
-        _save_chat(body.job_id)   # persist chat to disk
+        _save_chat(body.job_id)
         return {"message": display, "action": action}
 
     except Exception as exc:
-        # Remove the user message we just added so history stays clean
         if history and history[-1]["role"] == "user":
             history.pop()
         import traceback
         traceback.print_exc()
-        raise HTTPException(500, detail=f"OpenAI error: {exc}")
+        raise HTTPException(500, detail=f"Chat error: {exc}")
+
+
+# ── Clear chat history ────────────────────────────────────────────────────────
+@app.post("/api/clear-chat/{job_id}")
+async def clear_chat(job_id: str):
+    sessions[job_id] = []
+    (CACHE_DIR / f"{job_id}_chat.json").unlink(missing_ok=True)
+    return {"ok": True}
 
 
 # ── Apply action ───────────────────────────────────────────────────────────────
@@ -1284,6 +1470,12 @@ async def apply_action(body: ApplyBody):
     for change in body.action.get("changes", []):
         field = change.get("field")
         value = change.get("value")
+        # Fix model encoding dept change as catalogue_name "Pathology X" / "Radiology X"
+        if field == "catalogue_name" and isinstance(value, str):
+            if re.match(r'^pathology\s+', value, re.IGNORECASE):
+                field, value = "lab_type", "Pathology"
+            elif re.match(r'^radiology\s+', value, re.IGNORECASE):
+                field, value = "lab_type", "Radiology"
         # Match by raw_name (primary) or row_id (fallback)
         raw_name = (change.get("raw_name") or "").lower().strip()
         rid      = change.get("row_id")
@@ -1298,6 +1490,16 @@ async def apply_action(body: ApplyBody):
             mappings[i]["status"]         = "matched" if value else "unmatched"
         elif field == "status":
             mappings[i]["status"] = value
+        elif field == "price":
+            mappings[i]["price"] = str(value).strip()
+        elif field in ("lab_type", "department", "dept"):
+            v = str(value).strip()
+            if v.lower() in ("radiology", "rad"):
+                v = "Radiology"
+            elif v.lower() in ("pathology", "path"):
+                v = "Pathology"
+            mappings[i]["lab_type"] = v
+            mappings[i]["_dept"] = v.lower()
         mappings[i]["highlight"] = "ai"
         affected.append(mappings[i]["id"])
 
@@ -1310,7 +1512,9 @@ async def apply_action(body: ApplyBody):
 class UpdateBody(BaseModel):
     job_id: str
     row_id: str
-    standard_name: str
+    standard_name: str | None = None
+    price: str | None = None
+    lab_type: str | None = None
 
 
 @app.patch("/api/mapping")
@@ -1319,9 +1523,28 @@ async def update_mapping(body: UpdateBody):
         raise HTTPException(404, "Job not found")
     for row in jobs[body.job_id]["mappings"]:
         if row["id"] == body.row_id:
-            row["standard_name"] = body.standard_name
-            row["status"]        = "matched" if body.standard_name.strip() else "unmatched"
-            row["highlight"]     = None
+            if body.standard_name is not None:
+                row["standard_name"] = body.standard_name
+                row["status"]        = "matched" if body.standard_name.strip() else "unmatched"
+                row["highlight"]     = None
+            if body.price is not None:
+                row["price"] = body.price
+            if body.lab_type is not None:
+                row["lab_type"] = body.lab_type
+            _save_job(body.job_id)
+            # Persist correction so future jobs auto-apply it
+            if body.standard_name is not None and body.standard_name.strip():
+                try:
+                    apply_learnings([{
+                        "type":               "edited",
+                        "provider_name":      row["raw_name"],
+                        "old_catalogue_name": row.get("standard_name", ""),
+                        "new_catalogue_name": body.standard_name,
+                        "lab_type":           row.get("lab_type", ""),
+                        "price":              row.get("price", ""),
+                    }], PROJECT_ROOT)
+                except Exception:
+                    pass
             return row
     raise HTTPException(404, "Row not found")
 
@@ -1343,31 +1566,307 @@ async def update_mapping_status(body: StatusBody):
         if row["id"] == body.row_id:
             row["status"] = body.status
             row["highlight"] = None
+            _save_job(body.job_id)
             return row
     raise HTTPException(404, "Row not found")
 
 
+# ── Master detail lookup ───────────────────────────────────────────────────────
+@app.get("/api/master-detail")
+async def master_detail(catalogue_name: str):
+    """Return Output Format fields from master_details for a matched catalogue name."""
+    db_path = _master_db_path()
+    if not db_path.exists():
+        return {"row": {}}
+    try:
+        conn = sqlite3.connect(str(db_path))
+        # Check if master_details table exists
+        tbl = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='master_details'"
+        ).fetchone()
+        if not tbl:
+            conn.close()
+            return {"row": {}}
+        cols_info = conn.execute("PRAGMA table_info(master_details)").fetchall()
+        col_names = [r[1] for r in cols_info]
+        row = conn.execute(
+            f"SELECT {', '.join(col_names)} FROM master_details WHERE catalogue_name = ? LIMIT 1",
+            (catalogue_name,)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {"row": {}}
+        return {"row": dict(zip(col_names, row))}
+    except Exception as exc:
+        return {"row": {}, "error": str(exc)}
+
+
+class BulkDetailRequest(BaseModel):
+    catalogue_names: list[str]
+
+@app.post("/api/master-details-bulk")
+async def master_details_bulk(req: BulkDetailRequest):
+    """Return Output Format fields for multiple catalogue names in one call."""
+    db_path = _master_db_path()
+    if not db_path.exists() or not req.catalogue_names:
+        return {"rows": {}}
+    try:
+        conn = sqlite3.connect(str(db_path))
+        tbl = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='master_details'"
+        ).fetchone()
+        if not tbl:
+            conn.close()
+            return {"rows": {}}
+        col_names = [r[1] for r in conn.execute("PRAGMA table_info(master_details)").fetchall()]
+        placeholders = ",".join("?" * len(req.catalogue_names))
+        db_rows = conn.execute(
+            f"SELECT {', '.join(col_names)} FROM master_details WHERE catalogue_name IN ({placeholders})",
+            req.catalogue_names,
+        ).fetchall()
+        conn.close()
+        result = {row[0]: dict(zip(col_names, row)) for row in db_rows}
+        return {"rows": result, "columns": col_names}
+    except Exception as exc:
+        return {"rows": {}, "error": str(exc)}
+
+
 # ── Export ─────────────────────────────────────────────────────────────────────
-@app.get("/api/export/{job_id}")
-async def export(job_id: str):
-    job = jobs.get(job_id)
+class ExportBody(BaseModel):
+    job_id: str
+    mappings: list[dict] | None = None   # frontend sends current S.mappings with _masterOverrides
+
+
+_match_py_module = None  # cached import of match.py
+
+
+def _load_match_py():
+    """Lazily import match.py to reuse its full matching pipeline."""
+    global _match_py_module
+    if _match_py_module is not None:
+        return _match_py_module
+    import importlib.util
+    candidates = [
+        PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "scripts" / "match.py",
+        PROJECT_ROOT / "console" / ".claude" / "skills" / "process-catalogue" / "scripts" / "match.py",
+    ]
+    for p in candidates:
+        if p.exists():
+            spec = importlib.util.spec_from_file_location("_match_py", str(p))
+            mod  = importlib.util.module_from_spec(spec)
+            try:
+                spec.loader.exec_module(mod)
+                _match_py_module = mod
+                return mod
+            except Exception as exc:
+                print(f"[WARN] Could not load match.py from {p}: {exc}", file=sys.stderr)
+    return None
+
+
+def _fetch_master_details_map(catalogue_names: list[str]) -> dict[str, dict]:
+    """Return dict of catalogue_name → master_details row from SQLite.
+
+    For entries missing important fields, runs the same full matching pipeline
+    as match.py (_catalogue_token_match: normalize, typo correction, abbreviation
+    expansion, token_sort_ratio A/B/C/1/2 strategies, modality coherence gate)
+    to find a better-matching catalogue row and fill the gaps.
+    """
+    db_path = _master_db_path()
+    if not db_path.exists() or not catalogue_names:
+        return {}
+    try:
+        conn = sqlite3.connect(str(db_path))
+        tbl = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='master_details'"
+        ).fetchone()
+        if not tbl:
+            conn.close()
+            return {}
+        col_names = [r[1] for r in conn.execute("PRAGMA table_info(master_details)").fetchall()]
+
+        # Exact match first
+        placeholders = ",".join("?" * len(catalogue_names))
+        rows = conn.execute(
+            f"SELECT {', '.join(col_names)} FROM master_details WHERE catalogue_name IN ({placeholders})",
+            catalogue_names,
+        ).fetchall()
+        result = {row[0]: dict(zip(col_names, row)) for row in rows}
+
+        # Fields that should be filled via fuzzy fallback when empty
+        FILL_FIELDS = [
+            "report_tat", "fasting_hours", "fasting_required", "collection_type",
+            "home_collection", "entity_type", "lab_requirement", "age_range",
+            "gender", "minimum_patient", "precautions", "description",
+            "alias", "tags", "prescription_required", "mrp", "loinc_id",
+        ]
+
+        # Rows that still have at least one empty important field
+        needs_fill = [
+            cname for cname, row in result.items()
+            if any(not str(row.get(f, "") or "").strip() for f in FILL_FIELDS)
+        ]
+
+        if needs_fill:
+            # Load all master_details rows once
+            all_rows    = conn.execute(
+                f"SELECT {', '.join(col_names)} FROM master_details"
+            ).fetchall()
+            all_details = [dict(zip(col_names, r)) for r in all_rows]
+            all_cnames  = [d["catalogue_name"] for d in all_details]
+            name_to_row = {d["catalogue_name"]: d for d in all_details}
+
+            # Try to use match.py's full _catalogue_token_match pipeline
+            match_mod = _load_match_py()
+            if match_mod is not None:
+                # Build norm_cats once (same format _catalogue_token_match expects)
+                norm_cats: dict[str, str] = {}
+                for c in all_cnames:
+                    nc = match_mod.normalize_catalogue(c)
+                    if c and nc not in norm_cats:
+                        norm_cats[nc] = c
+
+                for cname in needs_fill:
+                    primary = result[cname]
+                    # Pre-process with same pipeline as match.py
+                    corrected  = match_mod.fix_medical_typos(cname)
+                    norm_input = match_mod.normalize_catalogue(corrected)
+
+                    # KNOWN_ABBREVIATIONS lookup
+                    abbrev_cat = match_mod.KNOWN_ABBREVIATIONS.get(norm_input)
+                    if abbrev_cat and abbrev_cat in name_to_row and abbrev_cat != cname:
+                        fuzzy_row = name_to_row[abbrev_cat]
+                        for field in FILL_FIELDS:
+                            if not str(primary.get(field, "") or "").strip():
+                                val = fuzzy_row.get(field, "")
+                                if str(val or "").strip():
+                                    primary[field] = val
+                        continue
+
+                    # Full _catalogue_token_match (strategies A/B/C/1/2)
+                    match_result = match_mod._catalogue_token_match(
+                        norm_input, corrected,
+                        None,                # master_df not needed when norm_cats provided
+                        all_cat_names=all_cnames,
+                        norm_cats=norm_cats,
+                    )
+                    if match_result:
+                        match_name, score = match_result
+                        if match_name != cname and score >= 0.65:
+                            fuzzy_row = name_to_row.get(match_name, {})
+                            for field in FILL_FIELDS:
+                                if not str(primary.get(field, "") or "").strip():
+                                    val = fuzzy_row.get(field, "")
+                                    if str(val or "").strip():
+                                        primary[field] = val
+
+            else:
+                # Fallback: simple token_sort_ratio ≥ 75 if match.py unavailable
+                from rapidfuzz import process as _rp, fuzz as _rf
+                for cname in needs_fill:
+                    primary = result[cname]
+                    matches = _rp.extract(
+                        cname, all_cnames, scorer=_rf.token_sort_ratio, limit=5
+                    )
+                    for match_name, score, _ in matches:
+                        if match_name == cname or score < 75:
+                            continue
+                        fuzzy_row = name_to_row.get(match_name, {})
+                        for field in FILL_FIELDS:
+                            if not str(primary.get(field, "") or "").strip():
+                                val = fuzzy_row.get(field, "")
+                                if str(val or "").strip():
+                                    primary[field] = val
+                        break
+
+        conn.close()
+        return result
+    except Exception:
+        import traceback; traceback.print_exc()
+        return {}
+
+
+class SaveOverridesBody(BaseModel):
+    job_id: str
+    mappings: list[dict]
+
+@app.post("/api/save-overrides")
+async def save_overrides(body: SaveOverridesBody):
+    """Persist confirmed _masterOverrides back into the server job cache."""
+    job = jobs.get(body.job_id)
+    if job:
+        # Merge confirmed overrides into server-side mappings
+        server_map = {r["id"]: r for r in job.get("mappings", []) if r.get("id")}
+        for m in body.mappings:
+            mid = m.get("id")
+            if mid and mid in server_map and m.get("_masterOverrides"):
+                server_map[mid]["_masterOverrides"] = m["_masterOverrides"]
+        job["mappings"] = list(server_map.values())
+        _save_job(body.job_id)
+    return {"ok": True}
+
+
+@app.post("/api/export")
+async def export(body: ExportBody):
+    job = jobs.get(body.job_id)
     if not job:
         raise HTTPException(404, "Job not found")
 
-    mappings = job["mappings"]
-    # confirmed + matched → output as matched; rejected/skipped → excluded entirely
-    matched_rows   = [{"provider_name": r["raw_name"], "catalogue_name": r["standard_name"],
-                        "match_type": r["match_type"], "confidence": r["confidence"]}
-                      for r in mappings if r["status"] in ("matched", "confirmed") and r.get("standard_name")]
-    unmatched_rows = [{"provider_name": r["raw_name"], "catalogue_name": r.get("standard_name",""),
-                        "match_type": "UNMATCHED", "confidence": 0}
-                      for r in mappings if r["status"] == "unmatched"]
+    # Prefer frontend mappings (include _masterOverrides); fall back to server copy
+    mappings = body.mappings or job["mappings"]
+
+    # Fetch master details for all matched catalogue names
+    catalogue_names = list({r.get("standard_name","") for r in mappings if r.get("standard_name")})
+    master_detail_map = _fetch_master_details_map(catalogue_names)
+
+    def _build_row(r: dict, status: str) -> dict:
+        cat_name = r.get("standard_name", "") or ""
+        md = master_detail_map.get(cat_name, {})
+        overrides = r.get("_masterOverrides") or {}
+        # Merge: overrides win over master_details
+        merged = {**md, **overrides}
+        dept = r.get("lab_type", "")
+        if dept and dept.lower() not in ("pathology", "radiology"):
+            dept = ""
+        return {
+            "provider_name":   r.get("raw_name", ""),
+            "catalogue_name":  cat_name,
+            "match_type":      r.get("match_type", status),
+            "confidence":      r.get("confidence", 0),
+            "price":           r.get("price", ""),
+            "department":      dept,
+            # Master detail fields
+            "loinc_id":              merged.get("loinc_id", ""),
+            "lab_requirement":       merged.get("lab_requirement", ""),
+            "entity_type":           merged.get("entity_type", ""),
+            "mrp":                   merged.get("mrp", "") or r.get("price", ""),
+            "discounted_price":      merged.get("discounted_price", ""),
+            "display_mrp":           merged.get("display_mrp", "") or r.get("price", ""),
+            "collection_type":       merged.get("collection_type", ""),
+            "home_collection":       merged.get("home_collection", ""),
+            "fasting_required":      merged.get("fasting_required", ""),
+            "fasting_hours":         merged.get("fasting_hours", ""),
+            "age_range":             merged.get("age_range", "").replace("$", " to "),
+            "gender":                merged.get("gender", ""),
+            "minimum_patient":       merged.get("minimum_patient", ""),
+            "report_tat":            merged.get("report_tat", ""),
+            "alias":                 merged.get("alias", ""),
+            "tags":                  merged.get("tags", ""),
+            "prescription_required": merged.get("prescription_required", ""),
+            "precautions":           merged.get("precautions", ""),
+            "description":           merged.get("description", ""),
+            "provider_item_name":    merged.get("provider_item_name", ""),
+        }
+
+    matched_rows   = [_build_row(r, "MATCHED")
+                      for r in mappings if r.get("status") in ("matched", "confirmed") and r.get("standard_name")]
+    unmatched_rows = [_build_row(r, "UNMATCHED")
+                      for r in mappings if r.get("status") == "unmatched"]
 
     corrections = [{"type": "edited", "provider_name": r["raw_name"],
-                    "old_catalogue_name": "", "new_catalogue_name": r["standard_name"]}
-                   for r in mappings if r["status"] == "matched" and r.get("highlight") == "ai"]
+                    "old_catalogue_name": "", "new_catalogue_name": r.get("standard_name","")}
+                   for r in mappings if r.get("status") == "matched" and r.get("highlight") == "ai"]
 
-    out_path = generate_output_excel(job_id, matched_rows, unmatched_rows, job["filename"], PROJECT_ROOT)
+    out_path = generate_output_excel(body.job_id, matched_rows, unmatched_rows, job["filename"], PROJECT_ROOT)
 
     if corrections:
         apply_learnings(corrections, PROJECT_ROOT)
