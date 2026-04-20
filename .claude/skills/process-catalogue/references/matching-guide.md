@@ -11,15 +11,15 @@ Call `scripts/match.py` after writing extracted names to `/tmp/extracted_names.c
 ```bash
 python3 .claude/skills/process-catalogue/scripts/match.py \
   --input /tmp/extracted_names.csv \
-  --master refrences/master_file.xlsx \
+  --master refrences/Master.csv \
   --output /tmp/matched_results.csv
 ```
 
 No `--threshold`, `--provider-col`, or `--catalogue-col` needed — match.py uses sensible defaults (threshold 80) and auto-detects columns from the master file.
 
 ### What match.py does (ordered pipeline per test name):
-1. **DB check**: reads `refrences/master_file.xlsx.db` (SQLite) if it exists and mtime matches — skips Excel read entirely. The DB is built automatically on first run and rebuilds whenever `master_file.xlsx` changes.
-2. Auto-detects the provider and catalogue columns in master_file.xlsx by name (only on first run / rebuild)
+1. **DB check**: reads `refrences/Master.csv.db` (SQLite) if it exists and mtime matches — skips CSV read entirely. The DB is built automatically on first run and rebuilds whenever `Master.csv` changes.
+2. Auto-detects the provider and catalogue columns in Master.csv by name (only on first run / rebuild)
 3. Normalizes all names (lowercase, stripped, OCR word-splits repaired, special chars removed)
 4. **Multi-test package check** — any name with 3+ comma-separated items inside parens → `SKIPPED` immediately
 5. **Medical typo correction** — known misspellings fixed before matching (e.g. `BROANCHOSCOPY` → bronchoscopy)
@@ -123,9 +123,9 @@ When multiple catalogue entries pass both gates, they are re-ranked by **attribu
 
 ---
 
-## Master Database (`master_file.xlsx.db`)
+## Master Database (`Master.csv.db`)
 
-The SQLite database at `refrences/master_file.xlsx.db` is the **single source of truth for all matching**. It is built once from `master_file.xlsx` and reused for every provider file processed thereafter.
+The SQLite database at `refrences/Master.csv.db` is the **single source of truth for all matching**. It is built once from `Master.csv` and reused for every provider file processed thereafter.
 
 Schema:
 ```sql
@@ -139,20 +139,20 @@ Relevant columns loaded into memory at startup:
 - `normalized_provider` → `catalogue_name` — for exact + fuzzy provider-name matching
 - `normalized_catalogue` → `catalogue_name` — for catalogue-name fallback matching (Strategy B/C)
 
-**Do not query `master_file.xlsx` directly for matching.** Always use the DB.
+**Do not query `Master.csv` directly for matching.** Always use the DB.
 
 To query the DB manually (e.g. to look up a test):
 ```bash
-sqlite3 refrences/master_file.xlsx.db \
+sqlite3 refrences/Master.csv.db \
   "SELECT provider_name, catalogue_name FROM master WHERE normalized_provider LIKE '%knee%' LIMIT 10"
 ```
 
-To force a DB rebuild (e.g. after editing master_file.xlsx):
+To force a DB rebuild (e.g. after editing Master.csv):
 ```bash
-rm refrences/master_file.xlsx.db
+rm refrences/Master.csv.db
 python3 .claude/skills/process-catalogue/scripts/match.py \
   --input /tmp/extracted_names.csv \
-  --master refrences/master_file.xlsx \
+  --master refrences/Master.csv \
   --output /tmp/matched_results.csv
 ```
 The DB rebuilds automatically on the next run when the file is missing or when mtime changes.
@@ -162,9 +162,8 @@ The DB rebuilds automatically on the next run when the file is missing or when m
 ## After match.py Completes
 
 - Read `/tmp/matched_results.csv`
-- Pass all `UNMATCHED` rows through both recovery passes (see `accuracy-loop-guide.md`):
-  1. Pass 1 — docx semantic loop (up to 3 rounds)
-  2. Pass 2 — semantic mapping (abbreviations, typos, catalogue-name search at ≥ 65%)
+- Pass all `UNMATCHED` rows through the semantic recovery pass (see `accuracy-loop-guide.md`):
+  - Semantic mapping — abbreviations, typos, catalogue-name search at ≥ 65%
 - Do not modify matched rows — trust the script output
 
 ## X-Ray Pricing Tier Handling

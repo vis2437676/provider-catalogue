@@ -403,5 +403,680 @@
     "lab_type": "Pathology",
     "price": "100",
     "timestamp": "2026-04-19T12:08:06.971714"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T14:58:11.792175"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T14:58:14.549680"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T14:58:16.693449"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T14:58:19.460771"
+  },
+  {
+    "type": "edited",
+    "provider_name": "(EPO) Erythropoietin",
+    "old_catalogue_name": "Erythropoietin",
+    "new_catalogue_name": "Erythropoietin",
+    "lab_type": "Pathology",
+    "price": "4000",
+    "timestamp": "2026-04-19T14:58:23.444709"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO NECK",
+    "old_catalogue_name": "CT Scan Neck Angiogram",
+    "new_catalogue_name": "CT Scan Neck Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T14:58:35.070657"
+  },
+  {
+    "type": "edited",
+    "provider_name": "cololur doppler upper abdomen",
+    "old_catalogue_name": "Doppler Upper Abdomen NA Study",
+    "new_catalogue_name": "Doppler Upper Abdomen NA Study",
+    "lab_type": "Radiology",
+    "price": "3000",
+    "timestamp": "2026-04-19T15:24:51.946673"
+  },
+  {
+    "type": "edited",
+    "provider_name": "cololur doppler upper abdomen",
+    "old_catalogue_name": "Doppler Upper Abdomen NA Study",
+    "new_catalogue_name": "Doppler Upper Abdomen NA Study",
+    "lab_type": "Radiology",
+    "price": "3000",
+    "timestamp": "2026-04-19T15:25:02.006404"
+  },
+  {
+    "type": "edited",
+    "provider_name": "(AChR) antibody",
+    "old_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "new_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "lab_type": "Pathology",
+    "price": "5000",
+    "timestamp": "2026-04-19T16:27:09.161009"
+  },
+  {
+    "type": "edited",
+    "provider_name": "(AChR) antibody",
+    "old_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "new_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "lab_type": "Pathology",
+    "price": "5000",
+    "timestamp": "2026-04-19T16:27:09.228734"
+  },
+  {
+    "type": "edited",
+    "provider_name": "(AChR) antibody",
+    "old_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "new_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "lab_type": "Pathology",
+    "price": "5000",
+    "timestamp": "2026-04-19T16:27:09.314289"
+  },
+  {
+    "type": "edited",
+    "provider_name": "(AChR) antibody",
+    "old_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "new_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "lab_type": "Pathology",
+    "price": "5000",
+    "timestamp": "2026-04-19T16:27:09.371931"
+  },
+  {
+    "type": "edited",
+    "provider_name": "(AChR) antibody",
+    "old_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "new_catalogue_name": "Acetylcholine Receptor (ACHR) Antibody",
+    "lab_type": "Pathology",
+    "price": "5000",
+    "timestamp": "2026-04-19T16:27:09.429820"
+  },
+  {
+    "type": "edited",
+    "provider_name": "ACTH LEVEL",
+    "old_catalogue_name": "ACTH (Adrenocorticotropic Hormone), Serum",
+    "new_catalogue_name": "ACTH (Adrenocorticotropic Hormone), Serum",
+    "lab_type": "Pathology",
+    "price": "2800",
+    "timestamp": "2026-04-19T16:35:38.447639"
+  },
+  {
+    "type": "edited",
+    "provider_name": "ANTI ENDOMYSIUM - IgA ANTIBODIES",
+    "old_catalogue_name": "Anti Endomysial Antibody IgA (EMA IgA)",
+    "new_catalogue_name": "Anti Endomysial Antibody IgA (EMA IgA)",
+    "lab_type": "Pathology",
+    "price": "2000",
+    "timestamp": "2026-04-19T16:35:47.661578"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT L S DYNAMIC",
+    "old_catalogue_name": "CT Scan Lumbo-Sacral Spine Dynamic",
+    "new_catalogue_name": "CT Scan Lumbo-Sacral Spine Dynamic",
+    "lab_type": "Radiology",
+    "price": "6000",
+    "timestamp": "2026-04-19T16:37:59.862532"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT L S DYNAMIC",
+    "old_catalogue_name": "CT Scan Lumbo-Sacral Spine Dynamic",
+    "new_catalogue_name": "CT Scan Lumbo-Sacral Spine Dynamic",
+    "lab_type": "Radiology",
+    "price": "6000",
+    "timestamp": "2026-04-19T16:38:01.838129"
+  },
+  {
+    "type": "edited",
+    "provider_name": "COVID ASSESMENT PROFILE",
+    "old_catalogue_name": "Covid-19 Assessment Profile",
+    "new_catalogue_name": "Covid-19 Assessment Profile",
+    "lab_type": "Pathology",
+    "price": "6000",
+    "timestamp": "2026-04-19T16:38:08.508247"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT Head (Plain)",
+    "old_catalogue_name": "CT Scan Brain Single Plain",
+    "new_catalogue_name": "CT Scan Brain Single Plain",
+    "lab_type": "Radiology",
+    "price": "2000",
+    "timestamp": "2026-04-19T16:38:29.307456"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT CHEST & BRONCHOSCOPY",
+    "old_catalogue_name": "CHEST",
+    "new_catalogue_name": "CHEST",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T16:43:51.097052"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T18:52:56.893195"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T18:54:00.392136"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T18:54:01.016499"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T18:54:07.687043"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "CT Scan Face Angiogram",
+    "new_catalogue_name": "CT Scan Face Angiogram",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T18:54:09.562101"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T18:55:45.939101"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T18:56:14.277048"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T18:56:36.585973"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T18:56:56.807896"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T18:57:15.360490"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T19:12:18.353362"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T19:17:30.341423"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T19:21:09.439111"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO FACE",
+    "old_catalogue_name": "",
+    "new_catalogue_name": "CT Scan Face",
+    "timestamp": "2026-04-19T19:21:50.455200"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CB NAAT PLEURAL FAUID",
+    "old_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "new_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "lab_type": "Pathology",
+    "price": "4000",
+    "timestamp": "2026-04-19T21:40:56.620322"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CB NAAT PLEURAL FAUID",
+    "old_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "new_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "lab_type": "Pathology",
+    "price": "4000",
+    "timestamp": "2026-04-19T21:41:03.024227"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CRP(Quantitative)",
+    "old_catalogue_name": "CRP (C Reactive Protein) Quantitative, Serum",
+    "new_catalogue_name": "CRP (C Reactive Protein) Quantitative, Serum",
+    "lab_type": "Pathology",
+    "price": "450",
+    "timestamp": "2026-04-19T21:41:18.212915"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CK-NAC",
+    "old_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "new_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "lab_type": "Pathology",
+    "price": "400",
+    "timestamp": "2026-04-19T21:41:47.896487"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CK-NAC",
+    "old_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "new_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "lab_type": "Pathology",
+    "price": "400",
+    "timestamp": "2026-04-19T21:42:35.154241"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CK-NAC",
+    "old_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "new_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "lab_type": "Pathology",
+    "price": "400",
+    "timestamp": "2026-04-19T21:42:58.367237"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CK-NAC",
+    "old_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "new_catalogue_name": "GeneXpert CB-NAAT, Pleural Fluid",
+    "lab_type": "Pathology",
+    "price": "400",
+    "timestamp": "2026-04-19T21:43:04.257284"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANKLE BOTH",
+    "old_catalogue_name": "CT Scan Ankle Bilateral Plain",
+    "new_catalogue_name": "CT Scan Ankle Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T21:59:51.939501"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ARM BOTH",
+    "old_catalogue_name": "CT Scan Arm Bilateral Plain",
+    "new_catalogue_name": "CT Scan Arm Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:03:05.403419"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ARM RIGHT / LEFT",
+    "old_catalogue_name": "CT Scan Arm Single Plain",
+    "new_catalogue_name": "CT Scan Arm Single Plain",
+    "lab_type": "Radiology",
+    "price": "4000",
+    "timestamp": "2026-04-19T22:03:16.465737"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT ANGIO CV JUNCTION",
+    "old_catalogue_name": "CT Scan Craniovertebral Junction Plain",
+    "new_catalogue_name": "CT Scan Craniovertebral Junction Plain",
+    "lab_type": "Radiology",
+    "price": "7000",
+    "timestamp": "2026-04-19T22:03:46.551248"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT CV JUNCTION DYNAMIC STUDY",
+    "old_catalogue_name": "CT Scan Craniovertebral Junction Dynamic",
+    "new_catalogue_name": "CT Scan Craniovertebral Junction Dynamic",
+    "lab_type": "Radiology",
+    "price": "9000",
+    "timestamp": "2026-04-19T22:04:00.768684"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT CERVICAL DYNAMIC",
+    "old_catalogue_name": "CT Scan Cervical Spine Dynamic",
+    "new_catalogue_name": "CT Scan Cervical Spine Dynamic",
+    "lab_type": "Radiology",
+    "price": "6000",
+    "timestamp": "2026-04-19T22:05:59.341691"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT CERVICAL DYNAMIC",
+    "old_catalogue_name": "CT Scan Cervical Spine Dynamic",
+    "new_catalogue_name": "CT Scan Cervical Spine Dynamic",
+    "lab_type": "Radiology",
+    "price": "6000",
+    "timestamp": "2026-04-19T22:05:59.407509"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT KNEE BOTH",
+    "old_catalogue_name": "CT Scan Knee Bilateral Plain",
+    "new_catalogue_name": "CT Scan Knee Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:11:53.442414"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT KNEE BOTH",
+    "old_catalogue_name": "CT Scan Knee Bilateral Plain",
+    "new_catalogue_name": "CT Scan Knee Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:11:53.569586"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT LEG BOTH",
+    "old_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "new_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:12:00.321374"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT LEG BOTH",
+    "old_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "new_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:12:00.377892"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT LEG BOTH",
+    "old_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "new_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:12:16.172099"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT LEG BOTH",
+    "old_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "new_catalogue_name": "CT Scan Leg Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:12:18.200074"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CT KNEE BOTH",
+    "old_catalogue_name": "CT Scan Knee Bilateral Plain",
+    "new_catalogue_name": "CT Scan Knee Bilateral Plain",
+    "lab_type": "Radiology",
+    "price": "8000",
+    "timestamp": "2026-04-19T22:12:56.939985"
+  },
+  {
+    "type": "edited",
+    "provider_name": "COVID ASSESMENT PROFILE",
+    "old_catalogue_name": "Covid-19 Assessment Profile",
+    "new_catalogue_name": "Covid-19 Assessment Profile",
+    "lab_type": "Pathology",
+    "price": "6000",
+    "timestamp": "2026-04-19T22:14:41.052776"
+  },
+  {
+    "type": "edited",
+    "provider_name": "COVID ASSESMENT PROFILE",
+    "old_catalogue_name": "Covid-19 Assessment Profile",
+    "new_catalogue_name": "Covid-19 Assessment Profile",
+    "lab_type": "Pathology",
+    "price": "6000",
+    "timestamp": "2026-04-19T22:14:43.299736"
+  },
+  {
+    "type": "edited",
+    "provider_name": "USG FWB BPP",
+    "old_catalogue_name": "USG Fetal Well Being with BPP",
+    "new_catalogue_name": "USG Fetal Well Being with BPP",
+    "lab_type": "Radiology",
+    "price": "2200",
+    "timestamp": "2026-04-19T23:27:35.609725"
+  },
+  {
+    "type": "edited",
+    "provider_name": "X-Ray IVP (Medicin & Procedure)",
+    "old_catalogue_name": "X Ray IVP",
+    "new_catalogue_name": "X Ray IVP",
+    "lab_type": "Radiology",
+    "price": "1500",
+    "timestamp": "2026-04-19T23:29:20.973333"
+  },
+  {
+    "type": "edited",
+    "provider_name": "CONTRAST AND CONSUMABLES",
+    "old_catalogue_name": "Contrast & Consumables Charges",
+    "new_catalogue_name": "Contrast & Consumables Charges",
+    "lab_type": "Pathology",
+    "price": "2500",
+    "timestamp": "2026-04-19T23:29:48.817528"
+  },
+  {
+    "type": "edited",
+    "provider_name": "NCV FACIAL PALCY",
+    "old_catalogue_name": "Nerve Conduction Study Facial Nerve",
+    "new_catalogue_name": "Nerve Conduction Study Facial Nerve",
+    "lab_type": "Radiology",
+    "price": "2700",
+    "timestamp": "2026-04-19T23:30:51.887907"
+  },
+  {
+    "type": "edited",
+    "provider_name": "NCV FACIAL PALCY",
+    "old_catalogue_name": "Nerve Conduction Study Facial Nerve",
+    "new_catalogue_name": "Nerve Conduction Study Facial Nerve",
+    "lab_type": "Radiology",
+    "price": "2700",
+    "timestamp": "2026-04-19T23:30:57.406807"
+  },
+  {
+    "type": "edited",
+    "provider_name": "MP (Rapid Visual Test)",
+    "old_catalogue_name": "Malaria Antigen Rapid Test (MP Card Test)",
+    "new_catalogue_name": "Malaria Antigen Rapid Test (MP Card Test)",
+    "lab_type": "Pathology",
+    "price": "300",
+    "timestamp": "2026-04-19T23:32:54.123742"
+  },
+  {
+    "type": "edited",
+    "provider_name": "EXTRA FILM",
+    "old_catalogue_name": "Extra Film Charges",
+    "new_catalogue_name": "Extra Film Charges",
+    "lab_type": "Pathology",
+    "price": "700",
+    "timestamp": "2026-04-19T23:33:42.184138"
+  },
+  {
+    "type": "edited",
+    "provider_name": "EXTRA FILM",
+    "old_catalogue_name": "Extra Film Charges",
+    "new_catalogue_name": "Extra Film Charges",
+    "lab_type": "Pathology",
+    "price": "700",
+    "timestamp": "2026-04-19T23:33:43.435786"
+  },
+  {
+    "type": "edited",
+    "provider_name": "TEC",
+    "old_catalogue_name": "Total Eosinophil Count (TEC)",
+    "new_catalogue_name": "Total Eosinophil Count (TEC)",
+    "lab_type": "Pathology",
+    "price": "100",
+    "timestamp": "2026-04-19T23:37:02.097476"
+  },
+  {
+    "type": "edited",
+    "provider_name": "ECHINOCOCUS",
+    "old_catalogue_name": "Echinococcus Antibody (IgG), Serum",
+    "new_catalogue_name": "Echinococcus Antibody (IgG), Serum",
+    "lab_type": "Pathology",
+    "price": "1000",
+    "timestamp": "2026-04-19T23:37:56.356361"
+  },
+  {
+    "type": "edited",
+    "provider_name": "ECHINOCOCUS",
+    "old_catalogue_name": "Echinococcus Antibody (IgG), Serum",
+    "new_catalogue_name": "Echinococcus Antibody (IgG), Serum",
+    "lab_type": "Pathology",
+    "price": "1000",
+    "timestamp": "2026-04-19T23:37:57.211563"
+  },
+  {
+    "type": "edited",
+    "provider_name": "DGP",
+    "old_catalogue_name": "DGP (Deamidated Gliadin Peptide) Antibody",
+    "new_catalogue_name": "DGP (Deamidated Gliadin Peptide) Antibody",
+    "lab_type": "Pathology",
+    "price": "1500",
+    "timestamp": "2026-04-19T23:38:03.028412"
+  },
+  {
+    "type": "edited",
+    "provider_name": "DGP",
+    "old_catalogue_name": "DGP (Deamidated Gliadin Peptide) Antibody",
+    "new_catalogue_name": "DGP (Deamidated Gliadin Peptide) Antibody",
+    "lab_type": "Pathology",
+    "price": "1500",
+    "timestamp": "2026-04-19T23:38:04.480119"
+  },
+  {
+    "type": "edited",
+    "provider_name": "USG FWB BPP",
+    "old_catalogue_name": "USG Fetal Well Being with BPP",
+    "new_catalogue_name": "USG Fetal Well Being with BPP",
+    "lab_type": "Radiology",
+    "price": "2200",
+    "timestamp": "2026-04-19T23:48:08.384517"
+  },
+  {
+    "type": "edited",
+    "provider_name": "USG FWB BPP",
+    "old_catalogue_name": "USG Fetal Well Being with BPP",
+    "new_catalogue_name": "USG Fetal Well Being with BPP",
+    "lab_type": "Radiology",
+    "price": "2200",
+    "timestamp": "2026-04-19T23:48:10.885277"
+  },
+  {
+    "type": "edited",
+    "provider_name": "TC/DC",
+    "old_catalogue_name": "Total Count/Differential Count",
+    "new_catalogue_name": "Total Count/Differential Count",
+    "lab_type": "Pathology",
+    "price": "250",
+    "timestamp": "2026-04-20T10:38:34.347559"
+  },
+  {
+    "type": "edited",
+    "provider_name": "ASLO {Quatative method }",
+    "old_catalogue_name": "ASLO (Anti-Streptolysin O) Quantitative",
+    "new_catalogue_name": "ASLO (Anti-Streptolysin O) Quantitative",
+    "lab_type": "Pathology",
+    "price": "700",
+    "timestamp": "2026-04-20T10:38:37.338014"
+  },
+  {
+    "type": "edited",
+    "provider_name": "Troponin-i/Rapid/Quative",
+    "old_catalogue_name": "Troponin I, Quantitative",
+    "new_catalogue_name": "Troponin I, Quantitative",
+    "lab_type": "Pathology",
+    "price": "500/1600",
+    "timestamp": "2026-04-20T10:44:22.415458"
+  },
+  {
+    "type": "edited",
+    "provider_name": "TC/DC",
+    "old_catalogue_name": "Total Count/Differential Count",
+    "new_catalogue_name": "Total Count/Differential Count",
+    "lab_type": "Pathology",
+    "price": "250",
+    "timestamp": "2026-04-20T11:19:39.305816"
+  },
+  {
+    "type": "edited",
+    "provider_name": "TC/DC",
+    "old_catalogue_name": "Total Count/Differential Count",
+    "new_catalogue_name": "Total Count/Differential Count",
+    "lab_type": "Pathology",
+    "price": "250",
+    "timestamp": "2026-04-20T11:19:45.888099"
   }
 ]

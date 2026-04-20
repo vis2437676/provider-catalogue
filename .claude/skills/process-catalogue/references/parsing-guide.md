@@ -1,94 +1,111 @@
 # Parsing Guide
 
-How to extract provider test names from each supported input file type.
-The goal of parsing is a clean, ordered list of raw test name strings — nothing else.
+How `_parse_file_with_claude()` in `console/server.py` extracts test names from each file type.
+Each file type is pre-processed in Python first, then Claude cleans up what Python couldn't determine.
 
 ---
 
 ## Output Format
 
-Write extracted names to `/tmp/extracted_names.csv` with a single column header:
+All parsing returns a list of dicts:
 
+```json
+[
+  {"name": "Complete Blood Count", "price": "300", "lab_type": "Pathology"},
+  {"name": "X-Ray Chest PA",       "price": "500", "lab_type": "Radiology"},
+  {"name": "Lipid Profile",         "price": "",    "lab_type": ""}
+]
 ```
-Provider Test Name
-Complete Blood Count
-Lipid Profile
-...
-```
+
+| Field | Description |
+|---|---|
+| `name` | Raw test name — original casing and spelling preserved |
+| `price` | Price as string (e.g. `"300"`, `"As per Packages"`) — empty string if not found |
+| `lab_type` | `"Pathology"`, `"Radiology"`, or `""` if cannot be determined |
 
 ---
 
 ## By File Type
 
-### Excel (.xlsx / .xls)
+### Excel (.xlsx / .xls) — `_pre_extract_excel()`
 
-1. Read the file using the Read tool
-2. Identify the column most likely containing test names (look for headers like "Test Name", "Item", "Test", "Description", or the first text column)
-3. Extract all non-empty values from that column
-4. Skip header rows, totals, or section dividers (rows that are all-caps section titles or blank)
+**Pass 1 — Deterministic (Python):**
+- Scans every sheet (skips: Provider Details, Centre Details, Logo, Instructions, Readme)
+- Uses `_find_name_price_cols()` to auto-detect the test name column and price column by content scoring (not by header name)
+- Also detects department column (headers matching Pathology/Radiology patterns)
+- Detects serial-number column — skips rows where S.No is empty (section headers)
+- Captures `price` from price column; infers `lab_type` from dept column or test name keywords via `_infer_lab_type()`
+- Removes duplicates
+- If any items found → returns directly, Claude is skipped for parsing
 
-### PDF (.pdf)
+**Pass 2 — Claude fallback (if deterministic finds nothing):**
+- Dumps all sheet content as text
+- Claude identifies test name column, price column, and dept column by content (not header)
+- Returns JSON: `{"tests": [{"name": ..., "price": ..., "lab_type": ...}]}`
 
-1. Read the file — Claude will see the text content
-2. Identify lines that represent test names (typically short noun phrases, not sentences)
-3. Strip out: prices, codes, units, section headers, page numbers
-4. Each test name on its own row in the output
-
-### Image (.jpg / .png / .jpeg / .webp)
-
-1. Claude vision reads the image directly
-2. Scan for a list or table of test names
-3. Extract each test name as a separate entry
-4. Ignore: logos, headers, footers, prices, column headers
-5. If the image is a table, extract only the test name column
-
-### Word Document (.doc / .docx)
-
-**Important:** The Read tool cannot open binary .docx files. Use python-docx via Bash instead.
-
-1. Extract text and tables using python-docx:
-
-```bash
-python3 -c "
-from docx import Document
-doc = Document('path/to/file.docx')
-
-# Extract from tables first (most provider catalogues are table-formatted)
-test_names = []
-for table in doc.tables:
-    for row in table.rows:
-        cells = [cell.text.strip() for cell in row.cells]
-        # Skip header rows (e.g. where a cell says 'Test Name')
-        if len(cells) >= 2 and cells[1] and cells[1] not in ('Test Name', 'Item'):
-            test_names.append(cells[1])
-
-# Also extract from paragraphs (for list-style documents)
-for para in doc.paragraphs:
-    text = para.text.strip()
-    if text and text not in ('Powered by:', ''):
-        test_names.append(text)
-
-print(f'Tables: {len(doc.tables)}')
-for i, t in enumerate(doc.tables):
-    print(f'  Table {i}: {len(t.rows)} rows x {len(t.columns)} cols')
-    for j, row in enumerate(t.rows[:3]):
-        print(f'    Row {j}:', [c.text.strip() for c in row.cells])
-"
-```
-
-2. Identify which table column holds test names (look for headers like "Test Name", "Item", or inspect row values)
-3. Adjust the extraction logic to pick the correct column index
-4. Test names typically appear as list items, table rows, or short paragraph lines
-5. Strip section headers, introductory paragraphs, and footnotes
-6. Each test name on its own row in the output
-
-**Note on OCR-split words:** .docx files sometimes contain mid-word line breaks that appear as extra spaces (e.g. "Sensiti vity", "T est"). The `normalize()` function in `match.py` handles these automatically — do not try to fix them during parsing.
+**Skip:** row numbers, codes, type labels (Routine/Special), specimen types (Serum/Blood), TAT, section headers, totals
 
 ---
 
-## Quality Checks Before Proceeding
+### PDF (.pdf) — `_pre_extract_pdf()` + Claude
 
-- Remove duplicates
-- Remove entries that are clearly not test names (e.g., "Total", "Page 1", "Provider Name")
-- Preserve original casing and spelling — normalization happens in match.py, not here
-- If fewer than 5 names extracted, warn the user and ask to confirm the correct file was shared
+**Pass 1 — Deterministic (Python via pdfplumber):**
+- Tries table extraction per page first (columns stay aligned)
+- Falls back to plain text if no tables found on a page
+- Uses universal column scorer to detect test name, price, dept columns from table headers
+- Extracts items directly if column detection succeeds
+
+**Pass 2 — Claude (for pages/sections where deterministic fails):**
+- Claude receives the structured text (table rows with `|` separators, or plain text)
+- Identifies test name lines (short noun phrases, not sentences)
+- Captures prices appearing alongside test names
+- Strips: codes, units, section headers, page numbers
+
+---
+
+### Word Document (.docx) — `_pre_extract_docx()`
+
+**Python extraction (always):**
+- Extracts from tables first, then paragraphs
+- **Two-column table detection**: if a table has S.No headers on both left half and right half (4–6 cols), splits into Left group + Right group — extracts ALL left-column rows first, then ALL right-column rows (preserves S.No ordering)
+- Passes structured text to Claude for test name identification
+
+**Claude then:**
+- Identifies which column holds test names
+- Captures price from adjacent column
+- Strips section headers, footnotes, introductory paragraphs
+
+**Note on OCR-split words:** `.docx` files sometimes have mid-word spaces (e.g. `"Sensiti vity"`). `normalize()` in `match.py` fixes these — do not try to fix during parsing.
+
+---
+
+### Image (.jpg / .png / .jpeg / .webp) — Claude vision directly
+
+- Raw image bytes sent to Claude vision
+- Claude scans for test name list or table
+- Extracts test name + price per row
+- Ignores: logos, headers, footers, column headers
+
+---
+
+## Skipped Sheets (Excel)
+
+These sheet names are always skipped:
+- `provider details`, `centre details`, `center details`, `logo`, `instructions`, `readme`
+
+---
+
+## Lab Type Inference (`_infer_lab_type()`)
+
+Used when no dept column is present:
+- **Radiology keywords**: CT, MRI, X-Ray, USG, Doppler, DEXA, PET, Ultrasound, Scan, X Ray
+- **Pathology**: everything else defaults to Pathology or blank
+
+---
+
+## Quality Rules
+
+- Preserve original casing and spelling — normalization happens in `match.py`
+- Remove duplicates (case-insensitive)
+- Skip rows where test name is clearly not a test: "Total", "Page 1", "Provider Name", "nan"
+- If fewer than 5 names extracted → fallback to `parse_file()` in `processor.py`

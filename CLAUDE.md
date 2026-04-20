@@ -37,7 +37,7 @@ Whenever the user shares any file in the conversation — PDF, Excel, image, DOC
 
 - **Master database**: on first run, reads `Master.csv` and builds a SQLite database at `refrences/Master.csv.db` — all subsequent runs read from the DB directly (skipping the CSV read entirely). The DB auto-rebuilds if `Master.csv` changes (mtime check)
 - **Pre-normalization**: expands KNOWN_ABBREVIATIONS (`TRBC` → Total RBC, `HVC` → HCV, etc.) and corrects KNOWN_TYPOS (`PSYCHOLOGICAL` → PHYSIOLOGICAL, etc.) before matching
-- **Exact match**: normalized lowercase lookup against `master_file.xlsx.db`
+- **Exact match**: normalized lowercase lookup against `Master.csv.db`
 - **Fallback table**: deterministic regex patterns for pricing tiers, combined procedures, and known acronyms — applied before any fuzzy match:
   - `SINGLE/DOUBLE/TRIPLE/FOUR PART` or `SPECIAL STUDY` X-rays → `X Ray Body NA Single Exposure`
   - `RGU+MCU` / `RGU MCU` combined → `X Ray Urinary Tract NA MCU RGU Plain`
@@ -67,7 +67,7 @@ When UNMATCHED rows exist, process **all of them together in a single pass** —
    - **Abbreviation expansion**: use medical knowledge to expand the name (e.g. `LACTAC` → Lactate, `C K M B` → CK-MB, `ABPA` → Aspergillus/Allergic BronchoPulmonary Aspergillosis)
    - **Typo correction**: identify and correct misspellings (e.g. `TYNCONAMETRY` → Tympanometry, `T ZUNCK` → Tzanck Smear, `BROANCHOSCOPY` → Bronchoscopy)
    - **Suffix noise strip**: remove operator noise (e.g. `GGT(SPECIAL)` → Gamma GT, `FSH (SPECIAL)` → FSH)
-   - **Substring search**: search the expanded name against catalogue names in `master_file.xlsx.db`
+   - **Substring search**: search the expanded name against catalogue names in `Master.csv.db`
    - **Generic fallbacks** (when no specific match exists):
 
      | Category | Fallback Catalogue Name |
@@ -146,3 +146,45 @@ Output saved to: output/<provider_name>_standardized_catalogue.xlsx
 ```
 
 If there are unmatched items, tell the user clearly: "Please open the UNMATCHED sheet and fill in the Catalogue Test Name column for the remaining rows."
+
+---
+
+## Console App (Review Interface)
+
+A separate FastAPI + single-page HTML tool lives in `console/`. It lets users review, edit, confirm, and export matched results before final output.
+
+**Start**: run `console/start.bat` or manually:
+```bash
+cd console
+uvicorn server:app --host 127.0.0.1 --port 8010 --reload
+```
+
+### Key Behavioral Rules (do not change these without explicit instruction)
+
+**Provider Slug**
+- Always derived from the Standard Name (catalogue name): lowercase, spaces and special chars → hyphens, leading/trailing hyphens stripped
+- Never derived from the raw provider test name or the master DB `provider_item_name` column
+- Applied in two places: `_build_row()` in `console/server.py` (export endpoint) and `_val()` in `webapp/backend/processor.py` (`generate_output_excel`)
+
+**Status Promotion**
+- Editing or pasting into the Standard Name field **must NOT auto-promote** the row to `matched`
+- Status is preserved at its current value until the user explicitly clicks ✓ (Confirm)
+- `inlineEdit()` (main table) and `savePvwSn()` (preview panel) both use `keep_status:true` on PATCH and restore `prevStatus` after server response
+- PATCH `/api/mapping` on the server respects `keep_status: bool` flag — only promotes status when `keep_status=False`
+
+**Recommendation Field**
+- Shows AI suggestion as a read-only copyable input (click → select all → Ctrl+C)
+- No auto-save, no auto-apply — copying from it and pasting into Standard Name is a manual two-step action
+- Text colour: dark (var(--text)), not muted
+
+**inlineEdit() — optimistic update**
+- Immediately writes `standard_name` and preserves `status` in `S.mappings` before the fetch
+- If the edited input is still focused when the server responds, skips `filterTable()` re-render (avoids destroying the active input)
+- Always passes `keep_status:true`
+
+**UI Conventions**
+- Row selection (checkbox): clicking the raw test name cell does NOT select the row — only checkbox click does
+- Filter chips: double-click on an active chip resets filter back to "All"
+- Files section: search bar is always visible (outside collapsible body); section starts expanded
+- Files section: input file has a direct download link; output file download triggers `exportFile()`
+- Standard Name field: "Restore suggestion" button is removed — user copies from Recommendation field manually

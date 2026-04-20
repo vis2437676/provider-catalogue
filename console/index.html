@@ -328,6 +328,8 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .file-item-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .file-item-meta{font-size:10px;color:var(--muted);margin-top:1px}
 .file-item-open{font-size:11px;font-weight:600;color:var(--primary);flex-shrink:0}
+.file-item-dl{font-size:14px;flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text-2);padding:2px 4px;text-decoration:none;line-height:1;margin-left:6px;border-radius:4px;}
+.file-item-dl:hover{color:var(--primary);background:var(--hover)}
 .files-empty{font-size:12px;color:var(--muted);padding:14px 8px;line-height:1.5;text-align:center;border:1.5px dashed var(--border);border-radius:var(--radius)}
 .btn-refresh{background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;font-weight:600;padding:2px 4px;transition:opacity .15s}
 .btn-refresh:hover{opacity:.7}
@@ -470,17 +472,19 @@ button,input,textarea,select{font-family:inherit;font-size:inherit}
 .fchip[data-status="matched"].active,.fchip[data-pvw-status="matched"].active{background:var(--green)}
 .fchip[data-status="unmatched"].active,.fchip[data-pvw-status="unmatched"].active{background:var(--red)}
 .fchip[data-status="rejected"].active,.fchip[data-pvw-status="rejected"].active{background:#EA580C}
-.fchip[data-status="skipped"].active{background:var(--yellow)}
+.fchip[data-status="skipped"].active,.fchip[data-pvw-status="skipped"].active{background:var(--yellow)}
 .fchip[data-status="unknown"].active{background:#7C3AED}
 .fchip[data-status="confirmed"].active{background:var(--accent)}
 .fchip[data-group="dept"].active,.fchip[data-pvw-dept].active{background:var(--primary)}
+#ai-filled-chip{color:#7C3AED;border-color:#7C3AED}
+#ai-filled-chip.active{background:#7C3AED;border-color:transparent;color:#fff!important}
 .fchip-n{font-size:10px;font-weight:600;padding:1px 5px;border-radius:var(--radius-xs);background:rgba(0,0,0,.1);min-width:16px;text-align:center}
 .fchip:not(.active) .fchip-n{background:var(--border-divider);color:var(--muted)}
 .tbl-search-row{display:flex;align-items:center;gap:8px}
 #tbl-search{border:1px solid var(--border-input);border-radius:var(--radius);padding:8px 14px 8px 36px;font-size:13px;width:240px;height:40px;outline:none;color:var(--text);background:var(--surface-gray) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23B3B3B3' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 12px center;transition:border-color .15s,box-shadow .15s}
 #tbl-search::placeholder{color:var(--muted)}
 #tbl-search:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(0,93,172,.08);outline:none}
-.btn-export-tbl{margin-left:auto;padding:8px 16px;border:1px solid var(--primary);border-radius:var(--radius);background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;min-width:84px;height:40px}
+.btn-export-tbl{margin-left:auto;padding:8px 16px;border:1px solid var(--primary);border-radius:var(--radius);background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s;width:130px;height:36px;flex-shrink:0}
 .btn-export-tbl:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
 
 /* Bulk action bar */
@@ -513,6 +517,7 @@ tr.hl-yellow{background:var(--yellow-bg);border-left:3px solid var(--yellow)}
 tr.hl-red{background:var(--red-bg);border-left:3px solid var(--red)}
 tr.hl-blue{background:var(--primary-light);border-left:3px solid var(--primary)}
 tr.hl-orange{background:var(--orange-bg);border-left:3px solid var(--orange)}
+tr.hl-skip{background:#F5F5F5;border-left:3px solid #BDBDBD;opacity:.75}
 tr.hl-purple{background:var(--surface-gray);border-left:3px solid var(--muted)}
 tr.hl-yellow:hover{background:#FEEDAE}tr.hl-red:hover{background:#F08F94;background:var(--red-bg)}
 tr.hl-blue:hover{background:var(--primary-border)}
@@ -595,12 +600,26 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
 .unmatched-view-all:hover{opacity:.7}
 
 /* ── Row Modal ── */
-#row-modal{
+#row-modal,#add-test-modal{
   position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .15s;
 }
-#row-modal.open{opacity:1;pointer-events:all}
+#row-modal.open,#add-test-modal.open{opacity:1;pointer-events:all}
+.btn-add-test{
+  display:flex;align-items:center;justify-content:center;gap:5px;border-radius:var(--radius);
+  font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+  background:var(--primary);color:#fff;border:1px solid var(--primary);transition:background .15s;
+  width:130px;height:36px;flex-shrink:0;
+}
+.btn-add-test:hover{background:#004fa3;border-color:#004fa3}
+.at-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.at-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.at-input{font-size:13px;padding:8px 12px;background:var(--surface);border:1px solid var(--border-input);border-radius:var(--radius);color:var(--text);width:100%;box-sizing:border-box}
+.at-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,93,172,.08)}
+.at-dept-row{display:flex;gap:8px}
+.at-dept-btn{flex:1;padding:7px;border-radius:var(--radius);border:1.5px solid var(--border-input);background:var(--surface);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:all .15s}
+.at-dept-btn.active{color:#fff}
 .rm-box{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:24px;width:700px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);
@@ -761,6 +780,9 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
       <div class="ws-sec-hdr clickable" onclick="toggleWsSection('preview')">
         <span>Mapping Preview</span>
         <div class="sec-actions">
+          <button class="sec-icon-btn" id="preview-add-btn" onclick="openAddTestModal();event.stopPropagation()" title="Add Test" style="display:none">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
           <button class="sec-icon-btn" id="preview-export-btn" onclick="exportFile();event.stopPropagation()" title="Export xlsx" style="display:none">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
           </button>
@@ -779,9 +801,10 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
           <!-- Filter chips for preview panel -->
           <div id="pvw-filter-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding-top:6px">
             <button class="fchip active" data-pvw-status="all" onclick="setPvwStatusFilter('all',this)" style="font-size:11px;height:26px;padding:2px 8px">All <span class="fchip-n pvw-n-all">0</span></button>
-            <button class="fchip" data-pvw-status="matched" onclick="setPvwStatusFilter('matched',this)" style="font-size:11px;height:26px;padding:2px 8px">Matched <span class="fchip-n pvw-n-matched">0</span></button>
-            <button class="fchip" data-pvw-status="unmatched" onclick="setPvwStatusFilter('unmatched',this)" style="font-size:11px;height:26px;padding:2px 8px">Unmatched <span class="fchip-n pvw-n-unmatched">0</span></button>
-            <button class="fchip" data-pvw-status="rejected" onclick="setPvwStatusFilter('rejected',this)" style="font-size:11px;height:26px;padding:2px 8px">Rejected <span class="fchip-n pvw-n-rejected">0</span></button>
+            <button class="fchip" data-pvw-status="matched" onclick="setPvwStatusFilter('matched',this)" ondblclick="setPvwStatusFilter('all',document.querySelector('[data-pvw-status=all]'))" style="font-size:11px;height:26px;padding:2px 8px">Matched <span class="fchip-n pvw-n-matched">0</span></button>
+            <button class="fchip" data-pvw-status="unmatched" onclick="setPvwStatusFilter('unmatched',this)" ondblclick="setPvwStatusFilter('all',document.querySelector('[data-pvw-status=all]'))" style="font-size:11px;height:26px;padding:2px 8px">Unmatched <span class="fchip-n pvw-n-unmatched">0</span></button>
+            <button class="fchip" data-pvw-status="skipped" onclick="setPvwStatusFilter('skipped',this)" ondblclick="setPvwStatusFilter('all',document.querySelector('[data-pvw-status=all]'))" style="font-size:11px;height:26px;padding:2px 8px" title="Multi-test bundles excluded from output">Skipped <span class="fchip-n pvw-n-skipped">0</span></button>
+            <button class="fchip" data-pvw-status="rejected" onclick="setPvwStatusFilter('rejected',this)" ondblclick="setPvwStatusFilter('all',document.querySelector('[data-pvw-status=all]'))" style="font-size:11px;height:26px;padding:2px 8px">Rejected <span class="fchip-n pvw-n-rejected">0</span></button>
             <div style="width:1px;height:16px;background:var(--border-divider);margin:0 2px"></div>
             <button class="fchip" data-pvw-dept="radiology" onclick="setPvwDeptFilter('radiology',this)" style="font-size:11px;height:26px;padding:2px 8px"><span style="width:6px;height:6px;border-radius:50%;background:#3B82F6;display:inline-block"></span>Radiology</button>
             <button class="fchip" data-pvw-dept="pathology" onclick="setPvwDeptFilter('pathology',this)" style="font-size:11px;height:26px;padding:2px 8px"><span style="width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block"></span>Pathology</button>
@@ -818,16 +841,22 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
 
     <!-- FILES -->
     <div class="ws-section" id="ws-files">
-      <div class="ws-sec-hdr clickable" onclick="toggleWsSection('files')">
-        <span>Files</span>
-        <div class="sec-actions">
-          <button class="sec-icon-btn" onclick="refreshFiles();event.stopPropagation()" title="Refresh">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          </button>
-          <svg id="chev-files" class="sec-chev collapsed" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      <div class="ws-sec-hdr clickable" onclick="toggleWsSection('files')" style="flex-direction:column;align-items:stretch;gap:6px;padding-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span>Files</span>
+          <div class="sec-actions">
+            <button class="sec-icon-btn" onclick="refreshFiles();event.stopPropagation()" title="Refresh">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+            <svg id="chev-files" class="sec-chev" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface-gray);border:1px solid var(--border-input);border-radius:var(--radius);padding:4px 8px">
+          <svg width="11" height="11" fill="none" stroke="var(--muted)" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input id="files-search" type="text" placeholder="Search files…" oninput="renderFilesList()" style="border:none;outline:none;background:transparent;font-size:11px;color:var(--text);width:100%;font-family:inherit"/>
         </div>
       </div>
-      <div id="ws-files-body" class="ws-sec-body ws-collapsed">
+      <div id="ws-files-body" class="ws-sec-body">
         <div class="files-tabs">
           <button class="files-tab active" onclick="switchTab('input',this)">Input</button>
           <button class="files-tab" onclick="switchTab('output',this)">Output</button>
@@ -885,11 +914,12 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
     <div class="filter-row">
       <span class="filter-lbl">Status</span>
       <button class="fchip active" data-status="all" onclick="setStatusFilter('all',this)">All <span class="fchip-n">0</span></button>
-      <button class="fchip" data-status="matched" onclick="setStatusFilter('matched',this)">Matched <span class="fchip-n">0</span></button>
-      <button class="fchip" data-status="unmatched" onclick="setStatusFilter('unmatched',this)">Unmatched <span class="fchip-n">0</span></button>
-      <button class="fchip" data-status="rejected" onclick="setStatusFilter('rejected',this)">Rejected <span class="fchip-n">0</span></button>
-      <button class="fchip" id="ai-filled-chip" onclick="toggleAiFilled(this)" style="border-color:var(--primary);color:var(--primary)">
-        <svg width="9" height="9" fill="var(--primary)" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+      <button class="fchip" data-status="matched" onclick="setStatusFilter('matched',this)" ondblclick="setStatusFilter('all',document.querySelector('[data-status=all]'))">Matched <span class="fchip-n">0</span></button>
+      <button class="fchip" data-status="unmatched" onclick="setStatusFilter('unmatched',this)" ondblclick="setStatusFilter('all',document.querySelector('[data-status=all]'))">Unmatched <span class="fchip-n">0</span></button>
+      <button class="fchip" data-status="rejected" onclick="setStatusFilter('rejected',this)" ondblclick="setStatusFilter('all',document.querySelector('[data-status=all]'))">Rejected <span class="fchip-n">0</span></button>
+      <button class="fchip" data-status="skipped" onclick="setStatusFilter('skipped',this)" ondblclick="setStatusFilter('all',document.querySelector('[data-status=all]'))" title="Multi-test bundles excluded from output">Skipped <span class="fchip-n" id="main-skipped-n">0</span></button>
+      <button class="fchip" id="ai-filled-chip" onclick="toggleAiFilled(this)">
+        <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
         AI Filled <span id="ai-filled-n" style="font-size:10px;opacity:.7">0</span>
       </button>
       <div class="filter-div" style="height:22px"></div>
@@ -932,6 +962,10 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         Export xlsx
       </button>
+      <button class="btn-add-test" onclick="openAddTestModal()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add Test
+      </button>
     </div>
   </div>
 
@@ -952,7 +986,7 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
         <th class="tbl-sticky" style="left:88px;z-index:6;min-width:200px">Raw Test Name</th>
         <th style="width:70px">Price</th>
         <th style="width:100px">Dept</th>
-        <th style="min-width:220px">Standard Name</th>
+        <th style="min-width:320px">Standard Name</th>
         <th style="width:90px">Confidence</th>
         <th style="width:108px">Status</th>
         <th style="width:130px">Actions</th>
@@ -1032,6 +1066,55 @@ tr:hover .btn-row-edit{opacity:1}.btn-row-edit:hover{background:var(--surface-gr
   </div>
 </div>
 
+<div id="add-test-modal" onclick="closeAddTestModal(event)">
+  <div class="rm-box" onclick="event.stopPropagation()" style="width:480px;max-width:96vw">
+    <div class="rm-hdr">
+      <div class="rm-title">Add Test Manually</div>
+      <button class="rm-close" onclick="closeAddTestModal()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="at-field">
+      <label class="at-label" for="at-raw">Provider Test Name <span style="color:var(--red)">*</span></label>
+      <input class="at-input" id="at-raw" type="text" placeholder="e.g. CBC with Differential" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('at-std').focus()"/>
+    </div>
+    <div class="at-field">
+      <label class="at-label" for="at-price">Price (₹)</label>
+      <input class="at-input" id="at-price" type="number" min="0" placeholder="e.g. 350" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('at-std').focus()"/>
+    </div>
+    <div class="at-field">
+      <label class="at-label" for="at-std">Standard Catalogue Name</label>
+      <input class="at-input" id="at-std" type="text" placeholder="Leave blank to mark as Unmatched" autocomplete="off" list="at-std-list" onkeydown="if(event.key==='Enter')submitAddTest()"/>
+      <datalist id="at-std-list"></datalist>
+      <span style="font-size:10px;color:var(--muted);margin-top:3px">Leave blank → row appears in Unmatched for manual review</span>
+    </div>
+    <div class="at-field" id="at-dept-field">
+      <div class="at-label">Department</div>
+      <div class="at-dept-row">
+        <button id="at-dept-path" class="at-dept-btn active" style="background:#10B981;border-color:#10B981" onclick="setAtDept('pathology')">
+          <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:inline-block;margin-right:5px"></span>Pathology
+        </button>
+        <button id="at-dept-rad" class="at-dept-btn" onclick="setAtDept('radiology')">
+          <span style="width:7px;height:7px;border-radius:50%;background:#3B82F6;display:inline-block;margin-right:5px"></span>Radiology
+        </button>
+      </div>
+    </div>
+    <div class="at-field">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="at-skipped" onchange="toggleAtSkipped(this.checked)" style="width:15px;height:15px;accent-color:#9E9E9E;cursor:pointer;flex-shrink:0"/>
+        <span>
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Mark as Skipped</span>
+          <span style="font-size:11px;color:var(--muted);display:block;margin-top:1px">Multi-test combination — excluded from output</span>
+        </span>
+      </label>
+    </div>
+    <div class="rm-footer" style="margin-top:4px">
+      <button class="btn-sm-sec" onclick="closeAddTestModal()">Cancel</button>
+      <button class="btn-sm-pri" id="at-submit-btn" onclick="submitAddTest()">+ Add Test</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1048,7 +1131,7 @@ let S = {
 };
 // Output Format column definitions for the table
 const MASTER_COLS=[
-  {key:'provider_item_name',label:'Provider Slug',       width:'160px'},
+  {key:'provider_item_name',label:'Provider Slug',       width:'260px'},
   {key:'loinc_id',        label:'LOINC ID',             width:'90px'},
   {key:'lab_requirement', label:'Services Offered',      width:'100px'},
   {key:'entity_type',     label:'Catalogue Type',        width:'100px'},
@@ -1066,7 +1149,7 @@ const MASTER_COLS=[
   {key:'alias',           label:'Alias',                 width:'140px'},
   {key:'tags',            label:'Tags',                  width:'120px'},
   {key:'prescription_required',label:'Rx Required',      width:'90px'},
-  {key:'precautions',     label:'Precautions',           width:'220px', wrap:true},
+  {key:'precautions',     label:'Precautions',           width:'220px', truncate:true},
   {key:'description',     label:'Overview',              width:'180px', truncate:true},
 ];
 
@@ -1402,16 +1485,18 @@ function addOutputFile(jobName,filename){
 function refreshFiles(){renderFilesList();toast('Files refreshed');}
 function renderFilesList(){
   const ses=curSession();
-  const inFiles=ses?.inputFiles||[];
-  const outFiles=ses?.outputFiles||[];
+  const q=(document.getElementById('files-search')?.value||'').toLowerCase().trim();
+  const filter=arr=>q?arr.filter(f=>f.name.toLowerCase().includes(q)):arr;
+  const inFiles=filter(ses?.inputFiles||[]);
+  const outFiles=filter(ses?.outputFiles||[]);
   const inEl=document.getElementById('files-input-list');
   const outEl=document.getElementById('files-output-list');
   if(!inEl||!outEl)return;
   inEl.innerHTML=inFiles.length
-    ?inFiles.map(f=>`<div class="file-item"><div class="file-item-icon">${fileIcon()}</div><div class="file-item-info"><div class="file-item-name">${esc(f.name)}</div><div class="file-item-meta">Input · ${f.size} · ${f.ts}</div></div></div>`).join('')
+    ?inFiles.map(f=>`<div class="file-item"><div class="file-item-icon">${fileIcon()}</div><div class="file-item-info"><div class="file-item-name">${esc(f.name)}</div><div class="file-item-meta">Input · ${f.size} · ${f.ts}</div></div><a class="file-item-dl" href="${API}/api/download/input/${ses?.jobId}" download="${esc(f.name)}" title="Download input file" onclick="event.stopPropagation()">⬇</a></div>`).join('')
     :'<div class="files-empty">Input uploads appear here automatically.</div>';
   outEl.innerHTML=outFiles.length
-    ?outFiles.map(f=>`<div class="file-item" onclick="openTable()"><div class="file-item-icon">${fileIcon('#16A34A')}</div><div class="file-item-info"><div class="file-item-name">${esc(f.name)}</div><div class="file-item-meta">Output · ${f.ts}</div></div><div class="file-item-open">Open</div></div>`).join('')
+    ?outFiles.map(f=>`<div class="file-item" onclick="openTable()"><div class="file-item-icon">${fileIcon('#16A34A')}</div><div class="file-item-info"><div class="file-item-name">${esc(f.name)}</div><div class="file-item-meta">Output · ${f.ts}</div></div><div class="file-item-open">Open</div><button class="file-item-dl" onclick="event.stopPropagation();exportFile()" title="Download output file">⬇</button></div>`).join('')
     :'<div class="files-empty">No outputs yet. Run a file to generate output.</div>';
   // Auto-expand FILES section when there is content
   if(inFiles.length||outFiles.length){
@@ -1504,7 +1589,7 @@ async function sendMessage(){
         }
         if(idx<0)continue;
         const fld=ch.field||'';
-        if(fld==='catalogue_name'){S.mappings[idx].standard_name=ch.value;S.mappings[idx].status='matched';count++;}
+        if(fld==='catalogue_name'){S.mappings[idx].standard_name=ch.value;if(S.mappings[idx].status!=='skipped')S.mappings[idx].status=ch.value?'matched':'unmatched';count++;}
         else if(fld==='status'){S.mappings[idx].status=ch.value;count++;}
         else if(fld==='price'){S.mappings[idx].price=String(ch.value||'').trim();count++;}
         else if(fld==='lab_type'||fld==='department'||fld==='dept'){
@@ -1576,10 +1661,10 @@ function _dept(r){
   if(r.lab_type)return r.lab_type.toLowerCase()==='radiology'?'radiology':'pathology';
   return (_RAD.test(r.raw_name||''))?'radiology':'pathology';
 }
-// Req 6: skipped → rejected, unknown → unmatched. No 'unknown' status exposed in UI.
 function _eff(r){
-  if(r.status==='skipped')return 'rejected';
   if(r.status==='unknown')return 'unmatched';
+  // Rows auto-promoted from skipped→matched by a bug keep match_type=SKIPPED; treat as skipped
+  if(r.match_type==='SKIPPED'&&r.status==='matched')return 'skipped';
   return r.status;
 }
 function _confReason(r){
@@ -1595,14 +1680,22 @@ function _confReason(r){
 }
 function _updateChipCounts(){
   const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0,skipped:0};
-  S.mappings.forEach(r=>{cnt.all++;const s=_eff(r);if(cnt[s]!==undefined)cnt[s]++;if(s==='confirmed')cnt.matched++;if(r.status==='skipped')cnt.skipped++;});
+  S.mappings.forEach(r=>{
+    cnt.all++;
+    const s=_eff(r);
+    if(cnt[s]!==undefined)cnt[s]++;
+  });
+  // No session-stats fallback needed — _eff() detects auto-promoted skipped rows correctly
+  // Chip "Matched" shows matched + confirmed together
+  const matchedChip=cnt.matched+cnt.confirmed;
   document.querySelectorAll('.fchip[data-status]').forEach(ch=>{
     const k=ch.dataset.status,b=ch.querySelector('.fchip-n');
-    if(b&&cnt[k]!==undefined)b.textContent=cnt[k];
+    if(!b)return;
+    if(k==='matched')b.textContent=matchedChip;
+    else if(cnt[k]!==undefined)b.textContent=cnt[k];
   });
-  // Also refresh the header stat pills from live data
   const el=document.getElementById('tbl-stats');
-  if(el)el.innerHTML=statPills({total:cnt.all,matched:cnt.matched+cnt.confirmed,unmatched:cnt.unmatched,skipped:cnt.skipped});
+  if(el)el.innerHTML=statPills({total:cnt.all,matched:matchedChip,unmatched:cnt.unmatched,skipped:cnt.skipped});
 }
 
 async function openTable(){
@@ -1635,7 +1728,7 @@ async function openTable(){
   renderPreviewTable();
   S.selected=new Set();
   document.getElementById('table-overlay').classList.add('open');
-  const st=ses?.stats||{};document.getElementById('tbl-stats').innerHTML=statPills(st);
+  const _liveSt={total:0,matched:0,unmatched:0,skipped:0};S.mappings.forEach(r=>{_liveSt.total++;const e=_eff(r);if(e==='matched'||e==='confirmed')_liveSt.matched++;else if(e==='unmatched')_liveSt.unmatched++;else if(e==='skipped')_liveSt.skipped++;});document.getElementById('tbl-stats').innerHTML=statPills(_liveSt);
   filterTable();
   _loadSuggestions();
   // Fetch master details for all matched catalogue names
@@ -1740,18 +1833,27 @@ async function _loadSuggestions(){
 function closeTable(){document.getElementById('table-overlay').classList.remove('open');}
 
 function setStatusFilter(status,el){
-  S.statusFilter=status;
+  // Toggle off if already active (except 'all' which is always the fallback)
+  if(S.statusFilter===status&&status!=='all'){
+    S.statusFilter='all';
+    document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
+    document.querySelector('.fchip[data-status="all"]')?.classList.add('active');
+  }else{
+    S.statusFilter=status;
+    document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+  }
   S.selected.clear();
   renderBulkBar();
-  document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');filterTable();
+  _updateAiFilledCount();
+  filterTable();
 }
 function setDeptFilter(dept,el){
   S.selected.clear();
   renderBulkBar();
   if(S.deptFilter===dept){S.deptFilter='all';el.classList.remove('active');}
   else{S.deptFilter=dept;document.querySelectorAll('.fchip[data-group="dept"]').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
-  filterTable();_syncPvwChips();
+  _updateAiFilledCount();filterTable();_syncPvwChips();
 }
 function toggleMissingDd(e){
   e.stopPropagation();
@@ -1778,6 +1880,7 @@ function _updateMissingLabel(){
   }
 }
 function setPvwStatusFilter(status,el){
+  if(S.statusFilter===status&&status!=='all'){status='all';el=document.querySelector('[data-pvw-status="all"]');}
   S.statusFilter=status;
   document.querySelectorAll('[data-pvw-status]').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.fchip[data-status]').forEach(c=>c.classList.remove('active'));
@@ -1796,11 +1899,12 @@ function _syncPvwChips(){
   _updatePvwChipCounts();
 }
 function _updatePvwChipCounts(){
-  const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0};
+  const cnt={all:0,matched:0,unmatched:0,confirmed:0,rejected:0,skipped:0};
   S.mappings.forEach(r=>{cnt.all++;const s=_eff(r);if(cnt[s]!==undefined)cnt[s]++;if(s==='confirmed')cnt.matched++;});
   document.querySelectorAll('[data-pvw-status]').forEach(ch=>{
     const k=ch.dataset.pvwStatus,b=ch.querySelector('.fchip-n');
-    if(b&&cnt[k]!==undefined)b.textContent=cnt[k];
+    if(!b)return;
+    if(cnt[k]!==undefined)b.textContent=cnt[k];
   });
 }
 
@@ -1829,10 +1933,11 @@ function filterTable(){
     }
     return true;
   });
-  // Rejected rows sink to the bottom (req 3)
+  // Preserve source-file order; use serial_no if present, otherwise stable insertion order
   S.filtered.sort((a,b)=>{
-    const ar=_eff(a)==='rejected',br=_eff(b)==='rejected';
-    return ar===br?0:ar?1:-1;
+    const sa=a.serial_no!=null&&a.serial_no!==''?Number(a.serial_no):Infinity;
+    const sb=b.serial_no!=null&&b.serial_no!==''?Number(b.serial_no):Infinity;
+    return sa-sb;
   });
   renderTable();
   _updateChipCounts();
@@ -1856,7 +1961,7 @@ function renderTable(){
   }
   const tb=document.getElementById('tbl-body');
   const colSpan=9+MASTER_COLS.length;
-  if(!S.filtered.length){tb.innerHTML=`<tr><td colspan="${colSpan}" class="tbl-empty">No rows match your filter.</td></tr>`;const mcb=document.getElementById('master-cb');if(mcb)mcb.checked=false;return;}
+  if(!S.filtered.length){const showAllBtn=S.statusFilter!=='all'?`&nbsp;<button onclick="setStatusFilter('all',document.querySelector('.fchip[data-status=\\'all\\']'))" style="font-size:11px;padding:2px 8px;border:1px solid var(--border-input);border-radius:4px;background:#fff;cursor:pointer;color:var(--primary)">Show All</button>`:'';tb.innerHTML=`<tr><td colspan="${colSpan}" class="tbl-empty">No rows match the current filter.${showAllBtn}</td></tr>`;const mcb=document.getElementById('master-cb');if(mcb)mcb.checked=false;return;}
   tb.innerHTML=S.filtered.map((r,i)=>{
     const c=Math.round((r.confidence||0)*100);
     const cls=c>=70?'h':c>=40?'m':c===0?'z':'l';
@@ -1864,21 +1969,23 @@ function renderTable(){
     const dept=_dept(r);
     const sel=S.selected.has(r.id);
     // Row highlight — rejected sink to bottom with orange, unmatched red
-    let hl=sel?'row-sel':eff==='rejected'?'hl-orange':eff==='unmatched'?'hl-red':r.highlight==='ai'?'hl-blue':c<70&&c>0&&eff==='matched'?'hl-yellow':'';
+    let hl=sel?'row-sel':eff==='skipped'?'hl-skip':eff==='rejected'?'hl-orange':eff==='unmatched'?'hl-red':r.highlight==='ai'?'hl-blue':c<70&&c>0&&eff==='matched'?'hl-yellow':'';
     // Confidence badge with tooltip
     const confHtml=`<span class="conf-wrap"><span class="conf ${cls}">${c>0?c+'%':'—'}</span><div class="conf-tip">${esc(_confReason(r))}</div></span>`;
-    // Standard name cell with redo + clear icons
+    // Standard name cell — all statuses including skipped get an editable input
     const sugg=r.suggested_name||'';
+    const skipHint=eff==='skipped'?`<div style="font-size:10px;color:#9E9E9E;font-style:italic;margin-top:2px">${esc(r.skip_reason||'Multi-test combination')}</div>`:'';
     const snHtml=`<div class="sn-wrap">
       <div class="sn-row">
-        <input class="sn-input" data-id="${r.id}" value="${esc(r.standard_name||'')}" title="${esc(r.standard_name||'')}" placeholder="${eff==='unmatched'?'Enter standard name…':''}"
-          onchange="inlineEdit('${r.id}',this.value)" onkeydown="snKeyNav(event,'${r.id}')" onfocus="this.select()"/>
+        <input class="sn-input" data-id="${r.id}" value="${esc(r.standard_name||'')}" title="${esc(r.standard_name||'')}" placeholder="${eff==='unmatched'||eff==='skipped'?'Enter standard name to match…':''}"
+          onchange="inlineEdit('${r.id}',this.value)" onpaste="setTimeout(()=>inlineEdit('${r.id}',this.value),50)" onkeydown="snKeyNav(event,'${r.id}')"/>
         <div class="sn-icons">
-          ${sugg?`<button class="sn-icon" title="Restore suggestion" onclick="regenStd('${r.id}',event)"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>`:''}
+
           <button class="sn-icon clr" title="Clear name" onclick="clearStd('${r.id}',event)"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
       </div>
-      ${sugg&&!r.standard_name?`<div style="display:flex;align-items:center;gap:4px"><div class="sn-sugg" style="flex:1;min-width:0" title="${esc(sugg)}">💡 ${esc(sugg)}</div><button style="flex-shrink:0;padding:1px 5px;border:1px solid var(--border-input);border-radius:3px;background:var(--surface);cursor:pointer;font-size:10px;color:var(--muted)" title="Copy suggestion" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(sugg)}').then(()=>toast('Copied'))">⎘</button></div>`:''}
+      ${skipHint}
+      ${sugg&&!r.standard_name?`<div style="display:flex;align-items:center;gap:4px;margin-top:2px"><span style="font-size:11px;color:var(--muted);flex-shrink:0">💡</span><input class="sn-input" style="font-size:12px;color:var(--text)" value="${esc(sugg)}" readonly onclick="this.select();event.stopPropagation()" onfocus="this.select()" title="Click to select all, then Ctrl+C to copy"/></div>`:''}
     </div>`;
     // Action buttons — icon only
     let acts='';
@@ -1891,7 +1998,7 @@ function renderTable(){
     }else if(eff==='rejected'){
       acts=`<button class="btn-restore" onclick="restoreRow('${r.id}',event)" title="Restore">↩</button>`;
     }else if(eff==='skipped'){
-      acts=`<button class="btn-restore" onclick="restoreRow('${r.id}',event)" title="Restore">↩</button>`;
+      acts=`<button class="btn-confirm" onclick="confirmSkipped('${r.id}',event)" title="Confirm as matched">✓</button><button class="btn-restore" onclick="restoreRow('${r.id}',event)" title="Move to Unmatched">↩</button>`;
     }
     const priceDisp=r.price?`₹${esc(r.price)}`:'—';
     const pencilSvg=`<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>`;
@@ -1902,7 +2009,8 @@ function renderTable(){
     const masterCells=MASTER_COLS.map(col=>{
       const rawV=_ov[col.key]!==undefined?_ov[col.key]:(md[col.key]||'');
       const v_mrp=(col.key==='mrp'||col.key==='display_mrp')&&!rawV?(r.price||''):rawV;
-      const v=col.key==='age_range'?v_mrp.replace(/\$/g,' to '):v_mrp;
+      const v_age=col.key==='age_range'?v_mrp.replace(/\$/g,' to '):v_mrp;
+      const v=col.key==='provider_item_name'?(r.standard_name?r.standard_name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''):''):v_age;
       const edited=_ov[col.key]!==undefined;
       const editedCls=edited?(_isPending(col.key)?'cell-pending':'cell-confirmed'):'';
       const cellStyle=col.wrap
@@ -1913,8 +2021,8 @@ function renderTable(){
     }).join('');
     return `<tr class="${hl}" data-id="${r.id}" onclick="rowClick('${r.id}',event)">
       <td class="cb-td tbl-sticky" style="left:0" onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" ${sel?'checked':''} onchange="toggleSelect('${r.id}',this.checked)"/></td>
-      <td class="tbl-sticky" style="left:34px;width:54px;min-width:54px;max-width:54px;color:var(--muted);font-size:11px;text-align:right;padding:6px 8px 6px 2px">${i+1}</td>
-      <td class="tbl-sticky" style="left:88px;font-weight:500;min-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.raw_name)}"><span class="dept-dot ${dept==='radiology'?'rad':'path'}"></span>${esc(stripPrice(r.raw_name))}</td>
+      <td class="tbl-sticky" style="left:34px;width:54px;min-width:54px;max-width:54px;color:var(--muted);font-size:11px;text-align:right;padding:6px 8px 6px 2px">${r.serial_no||i+1}</td>
+      <td class="tbl-sticky" onclick="event.stopPropagation()" style="left:88px;font-weight:500;min-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r.raw_name)}"><span class="dept-dot ${dept==='radiology'?'rad':'path'}"></span>${esc(stripPrice(r.raw_name))}</td>
       <td class="price-cell" onclick="event.stopPropagation()" style="white-space:nowrap"><div class="editable-cell direct-edit-cell" id="price-cell-${r.id}" onclick="startFieldEdit('${r.id}','price',event)">
         <span class="price-val">${priceDisp}</span>
       </div></td>
@@ -1922,7 +2030,7 @@ function renderTable(){
         <span class="dept-badge ${dept==='radiology'?'rad':'path'}" title="${dept==='radiology'?'Radiology':'Pathology'}">${dept==='radiology'?'Rad':'Path'}</span>
         <button class="pencil-btn" title="Edit department" onclick="startFieldEdit('${r.id}','dept',event)">${pencilSvg}</button>
       </div></td>
-      <td onclick="event.stopPropagation()" style="min-width:220px">${snHtml}</td>
+      <td onclick="event.stopPropagation()" style="min-width:320px">${snHtml}</td>
       <td>${confHtml}</td>
       <td><span class="stat ${eff}">${eff}</span></td>
       <td onclick="event.stopPropagation()"><div class="act-btns">${acts}<button class="btn-row-edit" onclick="openRowModal('${r.id}')" title="Edit detail"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></button></div></td>
@@ -1955,10 +2063,10 @@ function toggleSelectAll(checked){
   renderBulkBar();renderTable();
 }
 function _updateAiFilledCount(){
-  const n=S.mappings.filter(m=>
-    (m._pendingOverrides&&Object.keys(m._pendingOverrides).length>0)||
-    (m._masterOverrides&&Object.keys(m._masterOverrides).length>0)
-  ).length;
+  const isAiFilled=m=>(m._pendingOverrides&&Object.keys(m._pendingOverrides).length>0)||(m._masterOverrides&&Object.keys(m._masterOverrides).length>0);
+  // Count within currently status-filtered rows so number matches what user sees
+  const pool=S.statusFilter==='all'?S.mappings:S.mappings.filter(m=>_eff(m)===S.statusFilter||(_eff(m)==='confirmed'&&S.statusFilter==='matched'));
+  const n=pool.filter(isAiFilled).length;
   const el=document.getElementById('ai-filled-n');if(el)el.textContent=n;
   if(n===0){S.aiFilled=false;document.getElementById('ai-filled-chip')?.classList.remove('active');}
   return n;
@@ -2066,6 +2174,16 @@ async function restoreRow(id,e){
   const to=r?.match_type&&!['UNMATCHED','SKIPPED'].includes(r.match_type)?'matched':'unmatched';
   await _setRowStatus(id,to);toast('Row restored');
 }
+async function confirmSkipped(id,e){
+  e&&e.stopPropagation();
+  const r=S.mappings.find(m=>m.id===id);
+  if(!r)return;
+  if(!r.standard_name){toast('Enter a standard name first');const inp=document.querySelector(`.sn-input[data-id="${id}"]`);if(inp){inp.style.borderColor='var(--red)';inp.focus();}return;}
+  r.status='matched';r.match_type='manual';r.confidence=0.7;
+  _saveMappings(curSession()?.jobId,S.mappings);
+  filterTable();renderPreviewTable();_updateChipCounts();
+  toast('Skipped row confirmed as matched');
+}
 
 // ── Standard name icon handlers ───────────────────────────────────────────────
 function regenStd(id,e){
@@ -2093,19 +2211,47 @@ function snKeyNav(e,id){
 
 async function inlineEdit(id,val){
   const ses=curSession();if(!ses?.jobId)return;
-  const r=await fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:ses.jobId,row_id:id,standard_name:val})});
+  const idx=S.mappings.findIndex(m=>m.id===id);
+  const prevStatus=idx>=0?S.mappings[idx].status:'unmatched';
+  // Optimistic: update standard_name immediately so re-renders show the correct value
+  if(idx>=0){S.mappings[idx].standard_name=val;S.mappings[idx].status=prevStatus;}
+  const activeEl=document.activeElement;
+  const r=await fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:ses.jobId,row_id:id,standard_name:val,keep_status:true})});
   if(!r.ok)return;
   const updated=await r.json();
-  const idx=S.mappings.findIndex(m=>m.id===id);
-  if(idx>=0)S.mappings[idx]={...S.mappings[idx],...updated};
+  if(idx>=0){const merged={...S.mappings[idx],...updated};merged.status=prevStatus;S.mappings[idx]=merged;}
   _saveMappings(ses?.jobId,S.mappings);
-  renderPreviewTable();filterTable();toast('Saved');saveSessions();
+  // Skip table re-render if the edited input is still focused (avoid destroying active input)
+  const stillFocused=activeEl&&activeEl.classList.contains('sn-input')&&activeEl.dataset.id===id;
+  if(!stillFocused){renderPreviewTable();filterTable();}else{renderPreviewTable();}
+  toast('Saved');saveSessions();
 }
 function applyPvwSugg(id,e){
   e.stopPropagation();
   const r=S.mappings.find(m=>m.id===id);
   if(!r?.suggested_name)return;
   inlineEdit(id,r.suggested_name);
+}
+function fillSuggInput(id,val){
+  // Fill sn-input in mapping results table without saving — user confirms via ✓
+  const inp=document.querySelector(`.sn-input[data-id="${id}"]`);
+  if(!inp)return;
+  inp.value=val;inp.focus();
+  inp.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function fillPvwSuggInput(id,e){
+  e.stopPropagation();
+  const r=S.mappings.find(m=>m.id===id);
+  if(!r?.suggested_name)return;
+  // Open the editable cell in preview and pre-fill it
+  const cell=document.getElementById(`pvw-sn-cell-${id}`);
+  if(!cell)return;
+  const cur=r.suggested_name;
+  cell.innerHTML=`<input class="sn-input" type="text" value="${esc(cur)}" placeholder="Enter standard name…" style="flex:1;min-width:0;font-size:12px"
+    onblur="savePvwSn('${id}',this.value)"
+    onkeydown="if(event.key==='Enter'){savePvwSn('${id}',this.value);}if(event.key==='Escape'){renderPreviewTable();}"
+    onclick="event.stopPropagation()"/>`;
+  const inp=cell.querySelector('input');if(inp){inp.focus();inp.select();}
 }
 
 // ── Markdown renderer for chat messages ──────────────────────────────────────
@@ -2347,7 +2493,7 @@ async function sendTblChat(resetHistory=false){
         const id=nameMap[(raw_name||'').toLowerCase().trim()];if(!id)return;
         const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
         // Core mapping fields — update directly on the row
-        if(field==='catalogue_name'){S.mappings[idx].standard_name=value;S.mappings[idx].status=value?'matched':'unmatched';}
+        if(field==='catalogue_name'){S.mappings[idx].standard_name=value;if(S.mappings[idx].status!=='skipped')S.mappings[idx].status=value?'matched':'unmatched';}
         else if(field==='status')S.mappings[idx].status=value;
         else if(field==='price')S.mappings[idx].price=value;
         else if(field==='lab_type')S.mappings[idx].lab_type=value;
@@ -2401,7 +2547,7 @@ function _applyActionLocal(action){
   action.changes.forEach(({raw_name,field,value})=>{
     const id=nameMap[(raw_name||'').toLowerCase().trim()];if(!id)return;
     const idx=S.mappings.findIndex(m=>m.id===id);if(idx<0)return;
-    if(field==='catalogue_name'){S.mappings[idx].standard_name=value;S.mappings[idx].status=value?'matched':'unmatched';}
+    if(field==='catalogue_name'){S.mappings[idx].standard_name=value;if(S.mappings[idx].status!=='skipped')S.mappings[idx].status=value?'matched':'unmatched';}
     else if(field==='status')S.mappings[idx].status=value;
     else if(field==='price')S.mappings[idx].price=value;
     else if(field==='lab_type')S.mappings[idx].lab_type=value;
@@ -2475,16 +2621,14 @@ function startSnEdit(id,e){
 async function savePvwSn(id,val){
   const ses=curSession();if(!ses?.jobId)return;
   const idx=S.mappings.findIndex(m=>m.id===id);
-  if(idx>=0){
-    S.mappings[idx].standard_name=val;
-    S.mappings[idx].status=val.trim()?'matched':'unmatched';
-  }
+  const prevStatus=idx>=0?S.mappings[idx].status:'unmatched';
+  if(idx>=0)S.mappings[idx].standard_name=val;
   renderPreviewTable();filterTable();
   try{
-    const r=await fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:ses.jobId,row_id:id,standard_name:val})});
+    const r=await fetch(`${API}/api/mapping`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_id:ses.jobId,row_id:id,standard_name:val,keep_status:true})});
     if(r.ok){
       const updated=await r.json();
-      if(idx>=0)S.mappings[idx]={...S.mappings[idx],...updated};
+      if(idx>=0){const merged={...S.mappings[idx],...updated};merged.status=prevStatus;S.mappings[idx]=merged;}
       _saveMappings(ses.jobId,S.mappings);
       renderPreviewTable();filterTable();toast('Saved');saveSessions();
     }
@@ -2612,6 +2756,94 @@ function closeRowModal(e){
   if(e&&e.target!==document.getElementById('row-modal'))return;
   document.getElementById('row-modal').classList.remove('open');S.modalRow=null;
 }
+
+// ── Add Test Manually ─────────────────────────────────────────────────────────
+let _atDept='pathology';
+function toggleAtSkipped(checked){
+  const stdField=document.getElementById('at-std')?.closest('.at-field');
+  const deptField=document.getElementById('at-dept-field');
+  const btn=document.getElementById('at-submit-btn');
+  if(stdField)stdField.style.opacity=checked?'0.4':'1';
+  if(stdField)stdField.style.pointerEvents=checked?'none':'';
+  if(deptField)deptField.style.opacity=checked?'0.4':'1';
+  if(deptField)deptField.style.pointerEvents=checked?'none':'';
+  if(btn)btn.textContent=checked?'+ Add as Skipped':'+ Add Test';
+}
+function openAddTestModal(){
+  if(!S.mappings.length){toast('Open a processed file first');return;}
+  document.getElementById('at-raw').value='';
+  document.getElementById('at-price').value='';
+  document.getElementById('at-std').value='';
+  document.getElementById('at-skipped').checked=false;
+  toggleAtSkipped(false);
+  setAtDept('pathology');
+  // Populate standard name autocomplete from loaded master details
+  const dl=document.getElementById('at-std-list');
+  dl.innerHTML=Object.keys(S.masterDetails).map(n=>`<option value="${esc(n)}">`).join('');
+  document.getElementById('add-test-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('at-raw').focus(),80);
+}
+function closeAddTestModal(e){
+  if(e&&e.target!==document.getElementById('add-test-modal'))return;
+  document.getElementById('add-test-modal').classList.remove('open');
+}
+function setAtDept(dept){
+  _atDept=dept;
+  const pb=document.getElementById('at-dept-path');
+  const rb=document.getElementById('at-dept-rad');
+  pb.classList.toggle('active',dept==='pathology');
+  pb.style.background=dept==='pathology'?'#10B981':'var(--surface)';
+  pb.style.borderColor=dept==='pathology'?'#10B981':'var(--border-input)';
+  pb.style.color=dept==='pathology'?'#fff':'var(--muted)';
+  rb.classList.toggle('active',dept==='radiology');
+  rb.style.background=dept==='radiology'?'#3B82F6':'var(--surface)';
+  rb.style.borderColor=dept==='radiology'?'#3B82F6':'var(--border-input)';
+  rb.style.color=dept==='radiology'?'#fff':'var(--muted)';
+}
+function submitAddTest(){
+  const rawName=(document.getElementById('at-raw').value||'').trim();
+  if(!rawName){document.getElementById('at-raw').focus();document.getElementById('at-raw').style.borderColor='var(--red)';return;}
+  document.getElementById('at-raw').style.borderColor='';
+  const price=(document.getElementById('at-price').value||'').trim();
+  const isSkipped=document.getElementById('at-skipped').checked;
+  const stdName=isSkipped?'':(document.getElementById('at-std').value||'').trim();
+  const maxSn=S.mappings.reduce((m,r)=>Math.max(m,Number(r.serial_no)||0),0);
+  const newRow={
+    id:            'manual-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
+    raw_name:      rawName,
+    standard_name: stdName,
+    confidence:    isSkipped?0:(stdName?0.7:0),
+    match_type:    isSkipped?'SKIPPED':(stdName?'manual':'UNMATCHED'),
+    status:        isSkipped?'skipped':(stdName?'matched':'unmatched'),
+    highlight:     (!isSkipped&&stdName)?'ai':null,
+    price:         price,
+    lab_type:      isSkipped?'pathology':_atDept,
+    serial_no:     maxSn+1,
+    skip_reason:   isSkipped?'Multi-test combination — excluded from output':undefined,
+    _manually_added: true,
+  };
+  S.mappings.push(newRow);
+  _saveMappings(curSession()?.jobId, S.mappings);
+  const ses=curSession();
+  if(ses?.stats){
+    ses.stats.total=(ses.stats.total||0)+1;
+    if(isSkipped)ses.stats.skipped=(ses.stats.skipped||0)+1;
+    else if(stdName)ses.stats.matched=(ses.stats.matched||0)+1;
+    else ses.stats.unmatched=(ses.stats.unmatched||0)+1;
+    saveSessions();
+  }
+  document.getElementById('add-test-modal').classList.remove('open');
+  // Switch filter to show the new row
+  if(isSkipped&&S.statusFilter!=='all'&&S.statusFilter!=='skipped'){
+    setStatusFilter('all',document.querySelector('.fchip[data-status="all"]'));
+  }
+  filterTable();renderPreviewTable();_updateChipCounts();
+  toast(`Added${isSkipped?' (skipped)':''}: ${rawName}`);
+  setTimeout(()=>{
+    const el=document.querySelector(`tr[data-id="${newRow.id}"]`);
+    if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+  },150);
+}
 async function saveRowModal(){
   if(!S.modalRow)return;
   const val=document.getElementById('rm-std').value.trim();
@@ -2655,7 +2887,7 @@ async function modalReject(){
   await rejectRow(S.modalRow.id);
   document.getElementById('row-modal').classList.remove('open');
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('row-modal').classList.remove('open');closeTable();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('row-modal').classList.remove('open');document.getElementById('add-test-modal').classList.remove('open');closeTable();}});
 
 async function exportFile(){
   const ses=curSession();if(!ses?.jobId){toast('No job to export');return;}
@@ -2673,7 +2905,8 @@ async function exportFile(){
     const a=document.createElement('a');
     const cd=resp.headers.get('content-disposition')||'';
     const fnMatch=cd.match(/filename="?([^"]+)"?/);
-    a.href=url;a.download=fnMatch?fnMatch[1]:'export.xlsx';a.click();
+    const providerStem=(ses.name||'export').replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9_\- ]/g,'_').trim();
+    a.href=url;a.download=fnMatch?fnMatch[1]:`${providerStem}_standardized_catalogue.xlsx`;a.click();
     URL.revokeObjectURL(url);
     toast('Export downloaded');
   }catch(e){toast('Export failed: '+e.message);}
@@ -2818,6 +3051,8 @@ function _pvwActions(r){
     return`${enlarge}<button class="btn-confirm" onclick="confirmRow('${r.id}',event)" title="Confirm">✓</button><button class="btn-rej" onclick="_setRowStatus('${r.id}','rejected');event.stopPropagation()" title="Reject">✕</button>`;
   if(eff==='rejected')
     return`${enlarge}<button class="btn-restore" onclick="_setRowStatus('${r.id}','matched');event.stopPropagation()" title="Restore">↩</button>`;
+  if(eff==='skipped')
+    return`${enlarge}<button class="btn-confirm" onclick="confirmSkipped('${r.id}',event)" title="Confirm as matched">✓</button>`;
   return enlarge;
 }
 function renderPreviewTable(){
@@ -2826,6 +3061,7 @@ function renderPreviewTable(){
   const footer=document.getElementById('preview-footer');
   const expBtn=document.getElementById('preview-expand-btn');
   const exBtn=document.getElementById('preview-export-btn');
+  const addBtn=document.getElementById('preview-add-btn');
   const emptyEl=document.getElementById('right-empty');
   const scrollEl=document.getElementById('right-scroll');
   if(!container)return;
@@ -2836,6 +3072,7 @@ function renderPreviewTable(){
     if(footer)footer.classList.add('hidden');
     if(expBtn)expBtn.style.display='none';
     if(exBtn)exBtn.style.display='none';
+    if(addBtn)addBtn.style.display='none';
     return;
   }
   if(emptyEl)emptyEl.style.display='none';
@@ -2850,6 +3087,10 @@ function renderPreviewTable(){
     if(S.deptFilter&&S.deptFilter!=='all'&&_dept(r)!==S.deptFilter)return false;
     if(q&&!r.raw_name.toLowerCase().includes(q)&&!(r.standard_name||'').toLowerCase().includes(q))return false;
     return true;
+  }).sort((a,b)=>{
+    const sa=a.serial_no!=null&&a.serial_no!==''?Number(a.serial_no):Infinity;
+    const sb=b.serial_no!=null&&b.serial_no!==''?Number(b.serial_no):Infinity;
+    return sa-sb;
   }).slice(0,PREVIEW_LIMIT);
   container.innerHTML=`<table class="preview-tbl">
     <colgroup>
@@ -2880,8 +3121,8 @@ function renderPreviewTable(){
       const priceDisp=r.price?`₹${esc(r.price)}`:'—';
       const pvwPencil=`<svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>`;
       return `<tr>
-        <td class="pvw-num" onclick="openRowModal('${r.id}')">${i+1}</td>
-        <td class="pvw-raw" title="${esc(r.raw_name)}" onclick="openRowModal('${r.id}')"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dot};margin-right:5px;vertical-align:middle;flex-shrink:0"></span>${esc(truncate(r.raw_name,32))}</td>
+        <td class="pvw-num" onclick="openRowModal('${r.id}')">${r.serial_no||i+1}</td>
+        <td class="pvw-raw" title="${esc(r.raw_name)}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dot};margin-right:5px;vertical-align:middle;flex-shrink:0"></span>${esc(truncate(r.raw_name,32))}</td>
         <td class="price-cell" style="font-size:11px;white-space:nowrap" onclick="event.stopPropagation()">
           <div class="editable-cell direct-edit-cell" id="pvw-price-cell-${r.id}" onclick="startFieldEdit('${r.id}','price',event)">
             <span class="price-val">${priceDisp}</span>
@@ -2897,8 +3138,8 @@ function renderPreviewTable(){
           <div class="editable-cell direct-edit-cell" id="pvw-sn-cell-${r.id}" style="gap:3px" onclick="startSnEdit('${r.id}',event)">
             <span class="pvw-sn-text" title="${esc(r.standard_name||'')}" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${esc(sn)}</span>
           </div>
-          ${eff==='unmatched'&&r.suggested_name?`<div style="display:flex;align-items:center;gap:4px"><div class="pvw-sn-sugg" style="flex:1;min-width:0" title="Apply: ${esc(r.suggested_name)}" onclick="applyPvwSugg('${r.id}',event)">⚡ ${esc(truncate(r.suggested_name,36))}</div><button style="flex-shrink:0;padding:1px 4px;border:1px solid var(--border-input);border-radius:3px;background:var(--surface);cursor:pointer;font-size:9px;color:var(--muted);line-height:1.4" title="Copy suggestion" onclick="event.stopPropagation();navigator.clipboard.writeText('${esc(r.suggested_name)}').then(()=>toast('Copied'))">⎘</button></div>`:''}
-
+          ${eff==='skipped'?`<span style="font-size:9px;color:#9E9E9E;font-style:italic">${esc(r.skip_reason||'Multi-test combination')}</span>`:''}
+          ${(eff==='unmatched'||eff==='skipped')&&r.suggested_name?`<div style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="font-size:10px;color:var(--muted);flex-shrink:0">⚡</span><input class="sn-input" style="font-size:11px;color:var(--text)" value="${esc(r.suggested_name)}" readonly onclick="this.select();event.stopPropagation()" onfocus="this.select()" title="Recommendation — click to select all, then Ctrl+C to copy"/></div>`:''}
         </td>
         <td class="pvw-conf" onclick="openRowModal('${r.id}')">${_pvwConfBadge(r)}</td>
         <td style="text-align:center" onclick="openRowModal('${r.id}')"><span class="stat ${eff}" style="font-size:9px;padding:2px 6px">${eff}</span></td>
@@ -2913,6 +3154,7 @@ function renderPreviewTable(){
   }
   if(expBtn)expBtn.style.display='';
   if(exBtn)exBtn.style.display='';
+  if(addBtn)addBtn.style.display='';
 }
 
 loadSessions();

@@ -26,11 +26,9 @@ Returns: matched results + unmatched list for user to fill in
 ```
 providerCatalogue/
 ├── refrences/
-│   ├── master_file.xlsx       # Primary matching reference: Provider Test Name → Catalogue Test Name
-│   ├── input_file.docx        # Secondary fallback reference: full provider test name list
+│   ├── Master.csv             # Primary matching reference: Provider Test Name → Catalogue Test Name
+│   ├── Master.csv.db          # SQLite DB built from Master.csv — used for all matching
 │   └── Output_format.xlsx     # Output template: defines columns for the final output file
-├── scripts/
-│   └── match.py               # Deterministic fuzzy matching script (called by Claude)
 ├── input/
 │   └── <any file from lab provider>.(xlsx|pdf|jpg|png|doc|docx)
 ├── output/
@@ -78,9 +76,8 @@ Call `scripts/match.py` **once** passing the extracted names and master file:
 ```bash
 python3 .claude/skills/process-catalogue/scripts/match.py \
   --input /tmp/extracted_names.csv \
-  --master refrences/master_file.xlsx \
-  --output /tmp/matched_results.csv \
-  --threshold 80
+  --master refrences/Master.csv \
+  --output /tmp/matched_results.csv
 ```
 
 `match.py` runs **all** of the following internally in a single execution:
@@ -111,7 +108,7 @@ If UNMATCHED rows exist, run **one batched semantic pass** — all UNMATCHED row
    a. Check fallback table (pricing tiers, known acronyms, combined procedures)
    b. Expand abbreviations / correct typos using medical knowledge
    c. Strip noise suffixes (e.g. `GGT(SPECIAL)` → `Gamma GT`)
-   d. Search master_file.xlsx using substring on the expanded name
+   d. Search Master.csv.db using substring on the expanded name
    e. If still no match at 65%+ with modality coherence → `UNMATCHED`
 3. **Tag resolved rows** as `fuzzy-semantic`
 4. **No iterative rounds** — one pass, one threshold (65%). The 3-round docx loop is eliminated; it added latency with no accuracy benefit beyond what catalogue-name search now handles in the script.
@@ -223,7 +220,7 @@ Applied inside the script to every fuzzy/WRatio match before accepting:
 
 ### `scripts/match.py`
 - **Input**: `/tmp/extracted_names.csv` (single column: `Provider Test Name`)
-- **Master**: `refrences/master_file.xlsx` (auto-detects `provider_item_name` and `package_name` columns)
+- **Master**: `refrences/Master.csv` (auto-detects `provider_item_name` and `package_name` columns, builds `Master.csv.db` on first run)
 - **Output**: `/tmp/matched_results.csv`
 - **Libraries**: `pandas`, `rapidfuzz`
 - **Default threshold**: `--threshold 80` (provider-name fuzzy match)
@@ -255,6 +252,58 @@ Applied inside the script to every fuzzy/WRatio match before accepting:
 | WRatio only ran in LLM recovery — script couldn't catch abbreviated strings | WRatio now runs inside `match.py` for anything below 65% token_sort_ratio |
 | Semantic pass was row-by-row — O(n) LLM calls | Single batched pass for all UNMATCHED at once |
 | Modality coherence only enforced during LLM pass | Modality gate now applied inside `match.py` before any fuzzy match is accepted |
+
+---
+
+## Console App — Review Interface
+
+A separate FastAPI + HTML SPA in `console/` allows users to review and edit matched results interactively before exporting the final Excel.
+
+### Architecture
+
+| Component | File | Role |
+|-----------|------|------|
+| API server | `console/server.py` | FastAPI on port 8010; in-memory job store |
+| Frontend | `console/index.html` | Single-page app; all state in `S` (global JS object) |
+| Output writer | `webapp/backend/processor.py` | `generate_output_excel()` — writes final xlsx |
+| Launcher | `console/start.bat` | `uvicorn server:app --host 127.0.0.1 --port 8010 --reload` |
+
+### Status State Machine
+
+```
+unmatched → (user edits standard name) → still unmatched
+unmatched → (user clicks ✓)           → confirmed
+matched   → (user clicks ✕)           → rejected
+rejected  → (user clicks ↩)           → matched / unmatched
+skipped   → (user clicks ✓)           → confirmed
+```
+
+Editing / pasting a standard name value **never** changes status automatically. Status only changes via explicit action buttons.
+
+### Provider Slug Generation
+
+The `Provider Slug` (output column `provider_item_name`) is always computed from the Standard Name:
+
+```python
+re.sub(r'[^a-z0-9]+', '-', catalogue_name.strip().lower()).strip('-')
+```
+
+Applied in two places:
+- `_build_row()` in `console/server.py` — for the `/api/export` endpoint
+- `_val()` inside `generate_output_excel()` in `webapp/backend/processor.py`
+
+### Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Slug from standard name, not provider name | Provider names are noisy/abbreviated; standard names are canonical |
+| `keep_status:true` on all inline edits | Prevents accidental status promotion on paste; user must explicitly confirm |
+| Optimistic `standard_name` update in `inlineEdit()` | Prevents pasted text from disappearing if a re-render fires during the fetch |
+| Skip `filterTable()` while input is focused | Avoids destroying the active input element mid-edit |
+| Recommendation field as copy-only input | User workflow: copy suggestion → paste into Standard Name → confirm. No shortcut that bypasses review. |
+| Restore suggestion button removed | Redundant with the copyable recommendation field; reduced clutter |
+| Filter chip double-click → reset to All | Faster deselection without hunting for an "All" button |
+| Files section always expanded with visible search | Files section is frequently accessed; hiding it behind a collapsed state added friction |
 
 ---
 

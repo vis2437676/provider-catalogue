@@ -421,6 +421,9 @@ def generate_output_excel(
         if key == "confidence":
             v = row.get("confidence", 0)
             return f"{v:.0%}" if v else ""
+        if key == "provider_item_name":
+            cat = str(row.get("catalogue_name", "") or "").strip()
+            return re.sub(r"[^a-z0-9]+", "-", cat.lower()).strip("-") if cat else ""
         return str(row.get(key, "") or "")
 
     def _write_sheet(ws, cols, rows, fill_hex, hdr_font):

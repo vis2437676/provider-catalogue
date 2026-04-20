@@ -88,6 +88,92 @@ def _is_price_col(header: str) -> bool:
     return h in _PRICE_COLS_SET or bool(_PRICE_KW_RE.search(h))
 
 
+_NAME_HDR_RE  = re.compile(r'name|test|invest|item|descr|param|service|proc|particular', re.I)
+_PRICE_HDR_RE = re.compile(r'price|rate|mrp|amount|charge|fee|cost|rs\.?\b|rupee', re.I)
+_SKIP_HDR_RE  = re.compile(
+    r'^(s\.?\s*[il][\./]?\s*no\.?|sr\.?\s*no\.?|s\.?\s*no\.?|serial|sno|no\.?|#|sn|sl\.?\s*no\.?'
+    r'|type|specimen|tat|collect|home|gender|age|loinc|remark|note|status|qty|code|dept|department)$',
+    re.I,
+)
+
+
+def _find_name_price_cols(
+    headers: list,
+    rows: list[list],
+) -> tuple[int | None, int | None]:
+    """
+    Universal content+keyword scorer — finds the test-name column and price column
+    in any tabular data without relying on hardcoded header names.
+
+    Strategy:
+    - Header keywords give an initial bias (+/-)
+    - Column content (text richness vs numeric) refines the score
+    - The column with the highest name-score is the name column
+    - The column with the highest price-score (numeric, plausible range) is the price column
+
+    Returns (name_col_idx, price_col_idx) — either may be None if not found.
+    """
+    n = len(headers)
+    if n == 0:
+        return None, None
+
+    name_s  = [0.0] * n
+    price_s = [0.0] * n
+
+    # ── Header signals ────────────────────────────────────────────────────────
+    for ci, h in enumerate(headers):
+        h_ = str(h or "").strip()
+        hl = h_.lower()
+        if not hl:
+            continue
+        if _SKIP_HDR_RE.match(hl):
+            name_s[ci]  -= 8.0
+            price_s[ci] -= 8.0
+            continue
+        if _NAME_HDR_RE.search(hl):
+            name_s[ci] += 4.0
+        if _PRICE_HDR_RE.search(hl) or _is_price_col(hl):
+            price_s[ci] += 5.0
+
+    # ── Content signals (sample up to 40 rows) ────────────────────────────────
+    for row in rows[:40]:
+        cells = list(row)
+        for ci in range(min(n, len(cells))):
+            v = str(cells[ci] or "").strip()
+            if not v or v.lower() in ("nan", "none", "", "-", "n/a"):
+                continue
+            # Try numeric
+            try:
+                num = float(v.replace(",", "").replace("₹", "").replace("Rs", "").strip())
+                if 10 <= num <= 1_500_000:
+                    price_s[ci] += 0.5
+                else:
+                    price_s[ci] -= 0.05
+                name_s[ci] -= 0.15   # numeric → not a test name
+            except ValueError:
+                price_s[ci] -= 0.15  # non-numeric → not a price
+                chars = len(v)
+                if 3 <= chars <= 120:
+                    name_s[ci] += 0.3
+                elif chars > 120:
+                    name_s[ci] -= 0.2  # paragraph text, not a test name
+
+    # ── Pick best columns ─────────────────────────────────────────────────────
+    best_name, best_ns = None, 0.3   # require at least small positive score
+    for ci in range(n):
+        if name_s[ci] > best_ns and name_s[ci] > price_s[ci]:
+            best_ns, best_name = name_s[ci], ci
+
+    best_price, best_ps = None, 1.0  # require meaningful numeric content
+    for ci in range(n):
+        if ci == best_name and price_s[ci] < 10:  # only skip if not a clear price header
+            continue
+        if price_s[ci] > best_ps:
+            best_ps, best_price = price_s[ci], ci
+
+    return best_name, best_price
+
+
 # ── In-memory state ────────────────────────────────────────────────────────────
 jobs: dict[str, dict[str, Any]] = {}          # job_id → job data
 sessions: dict[str, list[dict]] = {}          # job_id → message history
@@ -108,6 +194,7 @@ def _save_job(job_id: str) -> None:
         "status":      "done",
         "stats":       job.get("stats", {}),
         "mappings":    job.get("mappings", []),
+        "skipped":     job.get("skipped", []),
         "output_path": job.get("output_path"),
     }
     try:
@@ -148,7 +235,7 @@ def _load_caches() -> None:
                     "file_path":    "",
                     "matched":      [],
                     "unmatched":    [],
-                    "skipped":      [],
+                    "skipped":      data.get("skipped", []),
                     "mappings":     data.get("mappings", []),
                     "stats":        data.get("stats", {}),
                     "output_path":  data.get("output_path"),
@@ -223,8 +310,8 @@ For simple update confirmations, use:
 }
 ```
 Supported fields — ALL are fully implemented and writable:
-- `field = "catalogue_name"` → sets the standard test name. NEVER use this to change department.
-- `field = "status"` → "matched" | "unmatched" | "rejected"
+- `field = "catalogue_name"` → sets the standard test name. NEVER use this to change department. For skipped rows, this stores the name but does NOT change status — the user must confirm manually.
+- `field = "status"` → "matched" | "unmatched" | "rejected". NEVER set a skipped row's status to "matched" directly — leave status changes for the user to confirm via the UI.
 - `field = "price"` → price as a numeric string e.g. "1500"
 - `field = "lab_type"` → ONLY "Radiology" or "Pathology". THIS is the ONLY field for department changes.
 - `field = "provider_item_name"` → provider's internal name / slug
@@ -370,6 +457,7 @@ def _rows_to_flat(job: dict) -> list[dict]:
             "highlight":      None,
             "price":          r.get("price", ""),
             "lab_type":       r.get("lab_type", ""),
+            "serial_no":      r.get("serial_no", ""),
         })
     for r in job.get("unmatched", []):
         cat = r.get("catalogue_name", "") or ""
@@ -383,7 +471,24 @@ def _rows_to_flat(job: dict) -> list[dict]:
             "highlight":      None,
             "price":          r.get("price", ""),
             "lab_type":       r.get("lab_type", ""),
+            "serial_no":      r.get("serial_no", ""),
         })
+    for r in job.get("skipped", []):
+        rows.append({
+            "id":             r["id"],
+            "raw_name":       r["provider_name"],
+            "standard_name":  "",
+            "confidence":     0.0,
+            "match_type":     "SKIPPED",
+            "status":         "skipped",
+            "highlight":      None,
+            "price":          r.get("price", ""),
+            "lab_type":       r.get("lab_type", ""),
+            "serial_no":      r.get("serial_no", ""),
+            "skip_reason":    "Multi-test combination — excluded from output",
+        })
+    # Sort by source serial_no so order matches the original file
+    rows.sort(key=lambda x: int(x["serial_no"]) if str(x.get("serial_no","")).isdigit() else 999999)
     return rows
 
 
@@ -394,7 +499,7 @@ _PARSE_SYSTEM = """You are a medical lab test catalogue parser following the pro
 Your ONLY job: extract raw provider test names from the content provided.
 
 RULES (from parsing-guide.md):
-- Return ONLY JSON: {"test_names": ["name1", "name2", ...]}
+- Return ONLY JSON: {"test_names": [{"name": "...", "price": "...", "lab_type": "Pathology|Radiology|"}]}
 - Strip out: prices (Rs/RS + number), codes, units, page numbers, totals
 - Include tests from ALL sections regardless of section heading — "OTHER FACILITIES", "SPECIAL TESTS", "RADIOLOGY", "PACKAGES", etc. are all valid sections containing real tests
 - Skip rows that are ONLY section headings with no test name (e.g. rows that say only "MRI CHARGES", "TEST NAME:-", "HAEMATOLOGY", "BIO CHEMISTRY", "SEROLOGY" with no actual test)
@@ -403,6 +508,7 @@ RULES (from parsing-guide.md):
 - Remove duplicates
 - Each test name as a separate entry
 - Include tests with non-numeric prices like "As per Packages", "Rs 300 per Film", "Rs 300 - Rs 500"
+- ORDERING: When the input shows "Left column group" before "Right column group", extract ALL left-column tests first (in their row order), then ALL right-column tests. Do NOT interleave them. This preserves the source file's S.No ordering.
 """
 
 
@@ -426,26 +532,6 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
     import pandas as pd
     import math as _math
 
-    # Known column headers that contain provider test names (BFHL template variants)
-    _PROVIDER_NAME_COLS = [
-        "provider test name (mandatory)",
-        "provider test name",
-        "partner test name",
-        "test name",
-        "investigations",
-        "investigation",
-        "test / investigation",
-        "investigation name",
-        "item name",
-        "item",
-        "test",
-        "particulars",
-        "services",
-        "service name",
-        "description",
-        "name",
-    ]
-
     # Sheets to skip — admin/meta sheets that never contain test names
     _SKIP_SHEETS = {"provider details", "centre details", "logo", "center details", "instructions", "readme"}
 
@@ -464,48 +550,44 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
 
         parts.append(f"=== Sheet: {sheet} ({len(df)} rows x {len(df.columns)} cols) ===")
         parts.append("Columns: " + " | ".join(str(c) for c in df.columns))
-        # Show first 3 data rows so Claude can understand structure
         for i, (_, row) in enumerate(df.head(3).iterrows()):
             parts.append(f"  Row {i+1}: " + " | ".join(str(v) for v in row.values))
         parts.append("All rows:")
         for _, row in df.iterrows():
             parts.append("  " + " | ".join(str(v) for v in row.values))
 
-        # ── Pass 1: deterministic column match ────────────────────────────────
-        cols_lower = {str(c).lower().strip(): c for c in df.columns}
-        matched_col = None
-        for candidate in _PROVIDER_NAME_COLS:
-            if candidate in cols_lower:
-                matched_col = cols_lower[candidate]
+        # ── Universal column detection (no hardcoded names) ───────────────────
+        col_headers = [str(c) for c in df.columns]
+        data_rows   = [[row_data[c] for c in df.columns] for _, row_data in df.iterrows()]
+        name_ci, price_ci = _find_name_price_cols(col_headers, data_rows)
+
+        matched_col = df.columns[name_ci]  if name_ci  is not None else None
+        price_col   = df.columns[price_ci] if price_ci is not None else None
+
+        # Detect department column
+        dept_col = None
+        for c in df.columns:
+            if str(c).strip().lower() in _DEPT_COLS_SET:
+                dept_col = c
                 break
 
-        # Detect price and department columns in this sheet
-        price_col = None
-        dept_col  = None
-        for cl_key, orig_col in cols_lower.items():
-            if price_col is None and _is_price_col(cl_key):
-                price_col = orig_col
-            if dept_col is None and cl_key in _DEPT_COLS_SET:
-                dept_col = orig_col
-
-        if matched_col:
-            # Detect serial-number column (Si/No, Sr.No, S.No, No., #, SN, etc.)
-            _SR_COL_PATS = re.compile(
+        if matched_col is not None:
+            # Detect serial-number column to skip section-header rows
+            _SR_PAT = re.compile(
                 r'^(s\.?\s*[il][\./]?\s*no\.?|sr\.?\s*no\.?|s\.?\s*no\.?|no\.?|#|sn|sl\.?\s*no\.?|serial)$',
-                re.IGNORECASE
+                re.IGNORECASE,
             )
             sr_col = None
-            for ck, orig_c in cols_lower.items():
-                if _SR_COL_PATS.match(ck.strip()):
-                    sr_col = orig_c
+            for c in df.columns:
+                if _SR_PAT.match(str(c).strip()):
+                    sr_col = c
                     break
-            # If no labelled sr col, use the first numeric-looking column
             if sr_col is None:
-                for orig_c in df.columns:
-                    col_vals = df[orig_c].dropna()
-                    numeric_count = sum(1 for v in col_vals if str(v).strip().replace('.','',1).isdigit())
-                    if numeric_count >= len(col_vals) * 0.5 and len(col_vals) > 0:
-                        sr_col = orig_c
+                for c in df.columns:
+                    col_vals = df[c].dropna()
+                    num_cnt = sum(1 for v in col_vals if str(v).strip().replace(".", "", 1).isdigit())
+                    if num_cnt >= len(col_vals) * 0.5 and len(col_vals) > 0:
+                        sr_col = c
                         break
 
             for _, row_data in df.iterrows():
@@ -513,14 +595,13 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
                 if raw_val is None or (isinstance(raw_val, float) and _math.isnan(raw_val)):
                     continue
                 name = str(raw_val).strip()
-                if not name or name.lower() in seen:
+                if not name or name.lower() in seen or name.lower() in ("nan",):
                     continue
-                # Skip section-header rows: Sr col is empty AND name has no price, no digits (pure label)
                 if sr_col is not None:
                     sr_val = row_data.get(sr_col)
-                    sr_empty = sr_val is None or (isinstance(sr_val, float) and _math.isnan(sr_val)) or str(sr_val).strip() in ('', 'nan')
+                    sr_empty = sr_val is None or (isinstance(sr_val, float) and _math.isnan(sr_val)) or str(sr_val).strip() in ("", "nan")
                     if sr_empty:
-                        continue  # section header row — no serial number
+                        continue
                 # Price
                 price_val = ""
                 if price_col is not None:
@@ -529,12 +610,12 @@ def _pre_extract_excel(file_path: str) -> tuple[list[dict] | None, str]:
                         pv_s = str(pv).strip()
                         if pv_s and pv_s != "nan":
                             price_val = pv_s
-                # Lab type — prefer explicit dept column, fall back to name inference
+                # Lab type
                 lab_type = _infer_lab_type(name)
                 if dept_col is not None:
                     dv = str(row_data.get(dept_col, "") or "").strip()
-                    if dv and dv.lower() not in ("nan", ""):
-                        lab_type = _infer_lab_type(dv) if _RAD_PAT.search(dv) else lab_type
+                    if dv and dv.lower() not in ("nan", "") and _RAD_PAT.search(dv):
+                        lab_type = "Radiology"
 
                 seen.add(name.lower())
                 all_items.append({"name": name, "price": price_val, "lab_type": lab_type})
@@ -579,27 +660,69 @@ def _pre_extract_pdf(file_path: str) -> str:
     return "\n".join(pages)
 
 
+_SNO_HDR_RE = re.compile(
+    r'^(s\.?\s*[il][\./]?\s*no\.?|sr\.?\s*no\.?|s\.?\s*no\.?|serial|sno|no\.?|#|sl\.?\s*no\.?)$',
+    re.I,
+)
+
+
 def _pre_extract_docx(file_path: str) -> str:
     """
     Parsing guide — DOCX:
     Extract from tables first (most catalogues are table-formatted),
-    then paragraphs. Show structure so Claude can pick the right column.
+    then paragraphs.
+
+    Two-column table handling (common in printed rate lists):
+    If the table has an S.No column on both the left half and right half,
+    extract LEFT column group first (all rows), then RIGHT column group.
+    This preserves the source file's S.No ordering (1,2,3…60 then 61,62…).
+    The S.No value is included in each row so Claude can carry it through.
     """
+    import re as _re
     from docx import Document
     doc   = Document(file_path)
     parts = []
 
-    # Tables first — show structure + all rows
     for ti, table in enumerate(doc.tables):
-        parts.append(f"=== Table {ti} ({len(table.rows)} rows x {len(table.columns)} cols) ===")
-        # First 3 rows to show headers/structure
-        for ri, row in enumerate(table.rows[:3]):
-            cells = [c.text.strip() for c in row.cells]
-            parts.append(f"  Row {ri}: {cells}")
-        parts.append("All rows:")
-        for row in table.rows:
-            cells = [c.text.strip() for c in row.cells]
-            parts.append("  " + " | ".join(cells))
+        rows_data = [[c.text.strip() for c in row.cells] for row in table.rows]
+        if not rows_data:
+            continue
+        n_cols = len(rows_data[0])
+        parts.append(f"=== Table {ti} ({len(rows_data)} rows x {n_cols} cols) ===")
+
+        # Show header row for structure context
+        parts.append(f"  Header: {rows_data[0]}")
+
+        # ── Detect two-column (side-by-side) table ────────────────────────────
+        # Pattern: 4-6 cols where col 0 and col half both look like S.No headers
+        half = n_cols // 2
+        hdr  = [c.lower().strip() for c in rows_data[0]]
+        is_double = (
+            n_cols >= 4
+            and half < len(hdr)
+            and _SNO_HDR_RE.match(hdr[0])
+            and _SNO_HDR_RE.match(hdr[half])
+        )
+
+        if is_double:
+            # Left group: cols 0 … half-1
+            parts.append(f"-- Left column group (cols 0-{half-1}):")
+            parts.append("  " + " | ".join(rows_data[0][:half]))  # header
+            for row in rows_data[1:]:
+                cells = row[:half]
+                if any(c for c in cells):
+                    parts.append("  " + " | ".join(cells))
+            # Right group: cols half … n_cols-1
+            parts.append(f"-- Right column group (cols {half}-{n_cols-1}):")
+            parts.append("  " + " | ".join(rows_data[0][half:]))  # header
+            for row in rows_data[1:]:
+                cells = row[half:]
+                if any(c for c in cells):
+                    parts.append("  " + " | ".join(cells))
+        else:
+            parts.append("All rows:")
+            for row in rows_data:
+                parts.append("  " + " | ".join(row))
 
     # Paragraphs
     if doc.paragraphs:
@@ -649,30 +772,27 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
 
             # Fallback: ask Claude to identify the right column
             prompt  = (
-                "This is an Excel provider catalogue that may have MULTIPLE sheets with test data.\n"
-                "IMPORTANT: Extract test names from EVERY sheet that contains provider test names — "
-                "not just one sheet. Combine all results into a single deduplicated list.\n"
-                "For each sheet, identify the column most likely containing provider test names "
-                "(headers like 'Provider Test Name', 'Partner Test Name', 'Test Name', 'Item', 'Description').\n"
-                "Also capture the price column (headers like Price, Rate, MRP, Amount, Charges) and "
-                "the department/section column (Pathology or Radiology) if present.\n"
-                "Skip admin sheets (Provider Details, Centre Details, Logo).\n"
-                "Skip header rows, totals, section dividers.\n\n"
+                "This is an Excel provider lab test catalogue — it may have multiple sheets.\n"
+                "Your task: extract EVERY test/investigation name from ALL sheets that contain test data.\n"
+                "Ignore admin sheets (e.g. Provider Details, Instructions, Logo).\n\n"
+                "Rules — independent of column names:\n"
+                "1. The TEST NAME column contains medical test/investigation names (text, 3–80 chars). "
+                "Find it by content, not by header. The header could say anything.\n"
+                "2. The PRICE column contains numeric values (e.g. 450, 1200). "
+                "Find it by content — the header could say 'Rate', 'MRP', 'Amount', 'Charges', or anything else. "
+                "ALWAYS extract price — do not skip it even if the header is unusual.\n"
+                "3. The DEPARTMENT column (if any) says 'Pathology' or 'Radiology'.\n"
+                "4. Skip: row numbers, codes, type labels (Routine/Special), specimen types "
+                "(Serum/Blood/Urine), TAT values, section headers, totals.\n\n"
                 f"{content[:80_000]}\n\n"
-                'Return JSON: {"tests": [{"name": "name1", "price": "450", "lab_type": "Pathology"}, ...]}'
+                'Return JSON: {"tests": [{"name": "Complete Blood Count", "price": "450", "lab_type": "Pathology"}, ...]}'
             )
             messages = [{"role": "user", "content": prompt}]
 
         elif ext == ".pdf":
             _prog(7, "Extracting PDF text…")
 
-            # ── Pass 1: deterministic column match (same logic as Excel) ─────
-            _PARAM_COLS = [
-                "parameter descriptions", "parameter description",
-                "test name", "test names", "investigation", "investigations",
-                "item name", "item", "description", "service", "procedure",
-                "test", "particular", "name",
-            ]
+            # ── Pass 1: universal column detection ───────────────────────────
             _SKIP_VALUES = {
                 "routine", "special", "serum", "plasma", "urine", "blood",
                 "edta blood", "pus", "fluid", "sputum", "stool", "swab",
@@ -683,9 +803,9 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
             import pdfplumber
             det_items: list[dict] = []
             seen_det: set[str] = set()
-            global_col_idx: int | None = None   # carry name col across pages
-            global_price_idx: int | None = None  # carry price col across pages
-            global_dept_idx: int | None = None   # carry dept col across pages
+            global_col_idx: int | None = None
+            global_price_idx: int | None = None
+            global_dept_idx: int | None = None
 
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
@@ -693,34 +813,35 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                         if not table:
                             continue
 
-                        # Try to find header in this table
+                        # Detect columns using universal scorer on first 5 rows as header candidates
                         header_row_idx = 0
                         header_col_idx = None
                         price_idx: int | None = None
                         dept_idx: int | None = None
-                        for ri, row in enumerate(table[:5]):
-                            if not row:
+
+                        for ri, hrow in enumerate(table[:5]):
+                            if not hrow:
                                 continue
-                            for ci, cell in enumerate(row):
-                                if not cell:
-                                    continue
-                                cl = str(cell).strip().lower()
-                                if cl in _PARAM_COLS and header_col_idx is None:
-                                    header_row_idx = ri
-                                    header_col_idx = ci
-                                if _is_price_col(cl) and price_idx is None:
-                                    price_idx = ci
-                                if cl in _DEPT_COLS_SET and dept_idx is None:
-                                    dept_idx = ci
-                            if header_col_idx is not None:
+                            hdrs = [str(c or "") for c in hrow]
+                            data_sample = [r for r in table[ri + 1: ri + 15] if r]
+                            nc, pc = _find_name_price_cols(hdrs, data_sample)
+                            if nc is not None:
+                                header_row_idx = ri
+                                header_col_idx = nc
+                                price_idx      = pc
+                                # Dept col: scan header row for dept keyword
+                                for ci2, cell2 in enumerate(hrow):
+                                    if str(cell2 or "").strip().lower() in _DEPT_COLS_SET:
+                                        dept_idx = ci2
+                                        break
                                 break
 
-                        # If no header found on this page, reuse last detected columns
+                        # If no header found, reuse last detected columns
                         if header_col_idx is None and global_col_idx is not None:
                             header_col_idx = global_col_idx
                             price_idx      = global_price_idx
                             dept_idx       = global_dept_idx
-                            header_row_idx = 0  # all rows are data rows
+                            header_row_idx = 0
 
                         if header_col_idx is not None:
                             global_col_idx   = header_col_idx
@@ -761,15 +882,19 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                 # Text-based PDF — send as structured text
                 _prog(14, "Identifying test names with Claude…")
                 prompt = (
-                    "This is a PDF provider catalogue with a table layout.\n"
-                    "The table has columns like: CODE | PARAMETER DESCRIPTIONS | TYPE | SPECIMEN | PRICE | TAT\n"
-                    "Extract the test/parameter names from the 'PARAMETER DESCRIPTIONS' (or equivalent test name) column.\n"
-                    "Also capture the PRICE column value for each test (numeric value, e.g. 450).\n"
-                    "Also capture the DEPARTMENT or SECTION if present (Pathology or Radiology).\n"
-                    "Do NOT extract: codes (like CB008), type values (ROUTINE/SPECIAL), specimen types (Serum/Blood/Urine/PUS/Fluid), or TAT values.\n"
-                    "Strip section headers and page numbers.\n\n"
+                    "This is a PDF provider lab test catalogue.\n"
+                    "Your task: extract EVERY test/investigation name along with its price.\n\n"
+                    "Rules — independent of column names:\n"
+                    "1. The TEST NAME column contains medical test names (text, 3–80 chars). "
+                    "Find it by content — the header could say anything (Test, Investigation, Description, Parameter, Item, Service, etc.).\n"
+                    "2. The PRICE column contains numeric values (e.g. 450, 1200). "
+                    "Find it by content — ALWAYS extract it regardless of what the header says. "
+                    "The header might be Rate, MRP, Charges, Amount, Fee, Rs, or anything else.\n"
+                    "3. If a DEPARTMENT or SECTION column exists, classify each test as Pathology or Radiology.\n"
+                    "4. Skip: row numbers, codes, type labels (Routine/Special), specimen types "
+                    "(Serum/Blood/Urine/Fluid), TAT values, section headers, page numbers.\n\n"
                     f"{content[:80_000]}\n\n"
-                    'Return JSON: {"tests": [{"name": "name1", "price": "450", "lab_type": "Pathology"}, ...]}'
+                    'Return JSON: {"tests": [{"name": "Complete Blood Count", "price": "450", "lab_type": "Pathology"}, ...]}'
                 )
                 messages = [{"role": "user", "content": prompt}]
             else:
@@ -813,11 +938,12 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                             "type": "base64", "media_type": "image/jpeg", "data": img_b64}})
 
                     batch_prompt = (
-                        "These are consecutive pages from a scanned provider radiology/pathology catalogue. "
-                        "Extract EVERY test/investigation name from ALL pages. "
-                        "Capture the price for each test (numeric only, no currency symbols) and "
-                        "whether it is Pathology or Radiology. "
-                        "Do NOT skip any row — include every line that has a test name. "
+                        "These are consecutive pages from a scanned provider lab test catalogue. "
+                        "Extract EVERY test/investigation name from ALL pages — do not skip any row. "
+                        "For PRICE: find the numeric column regardless of its header name "
+                        "(could be Rate, MRP, Charges, Amount, Fee, Rs, or anything else). "
+                        "ALWAYS capture the price for each test. "
+                        "Classify each test as Pathology or Radiology. "
                         "Ignore logos, headers, footers, page numbers, and section dividers. "
                         'Return JSON: {"tests": [{"name": "CT Head Plain", "price": "6000", "lab_type": "Radiology"}, ...]}'
                     )
@@ -884,48 +1010,116 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                 for table in _doc.tables:
                     if not table.rows:
                         continue
-                    # Find header row — detect name, price, dept col indices
-                    _hcol  = None
+                    # Find header row — detect ALL name cols (supports two-column layouts)
+                    _hcols: list[int] = []   # all name column indices
+                    _pcols: dict[int, int] = {}  # name_col -> price_col
                     _hrow  = 0
-                    _pcol  = None
                     _dcol  = None
+                    _hdr_cells_low: list[str] = []
+                    _NAME_KWS_W = ["investigation", "name", "test", "item", "description",
+                                   "parameter", "service", "procedure", "particular"]
+
+                    # Pass A: keyword-based detection (handles labelled headers + embedded headers)
                     for ri, row in enumerate(table.rows[:5]):
-                        for ci, cell in enumerate(row.cells):
-                            cl = cell.text.strip().lower()
-                            if _hcol is None and cl in _PARAM_COLS_W:
-                                _hcol = ci
+                        cells_text = [cell.text.strip() for cell in row.cells]
+                        cells_low  = [t.lower() for t in cells_text]
+                        for ci, cl in enumerate(cells_low):
+                            is_name_col = any(k in cl for k in _NAME_KWS_W)
+                            if is_name_col and ci not in _hcols:
+                                _hcols.append(ci)
                                 _hrow = ri
-                            if _pcol is None and _is_price_col(cl):
-                                _pcol = ci
                             if _dcol is None and cl in _DEPT_COLS_SET:
                                 _dcol = ci
-                        if _hcol is not None:
+                        if _hcols:
+                            _hdr_cells_low = cells_low
+                            # Find nearest price col for each name col (prefer rightward)
+                            for nc in _hcols:
+                                best_pc, best_dist = None, 99
+                                for pc, cl in enumerate(cells_low):
+                                    if not _is_price_col(cl):
+                                        continue
+                                    dist = pc - nc
+                                    if 0 < dist <= 4 and dist < best_dist:
+                                        best_pc, best_dist = pc, dist
+                                if best_pc is None:
+                                    for pc, cl in enumerate(cells_low):
+                                        if _is_price_col(cl) and abs(pc - nc) <= 4:
+                                            best_pc = pc
+                                            break
+                                if best_pc is not None:
+                                    _pcols[nc] = best_pc
                             break
 
-                    if _hcol is not None:
-                        for row in table.rows[_hrow + 1:]:
-                            if _hcol >= len(row.cells):
-                                continue
-                            val = row.cells[_hcol].text.strip()
-                            val_low = val.lower()
-                            if (val and len(val) >= 3
-                                    and val_low not in _SKIP_VALUES_W
-                                    and val_low not in _seen_w
-                                    and not val.replace(" ", "").isdigit()):
-                                # Price
+                    # Deduplicate: keep only cols whose header actually contains a name keyword
+                    _hcols = [nc for nc in _hcols
+                              if nc < len(_hdr_cells_low)
+                              and any(k in _hdr_cells_low[nc] for k in _NAME_KWS_W)]
+
+                    # Pass B: content-based fallback when keyword detection found nothing
+                    if not _hcols and len(table.rows) >= 3:
+                        all_cell_rows = [[cell.text.strip() for cell in row.cells]
+                                         for row in table.rows]
+                        hdrs = all_cell_rows[0]
+                        fb_nc, fb_pc = _find_name_price_cols(hdrs, all_cell_rows[1:])
+                        if fb_nc is not None:
+                            _hcols = [fb_nc]
+                            _hrow  = 0
+                            _hdr_cells_low = hdrs
+                            if fb_pc is not None:
+                                _pcols[fb_nc] = fb_pc
+
+                    if _hcols:
+                        # Find S.No column for each name column (first S.No-looking col before it)
+                        _sno_for_nc: dict[int, int] = {}
+                        for _nc in _hcols:
+                            for _sci in range(_nc):
+                                _sh = _hdr_cells_low[_sci] if _sci < len(_hdr_cells_low) else ""
+                                if _SNO_HDR_RE.match(_sh):
+                                    _sno_for_nc[_nc] = _sci
+                                    break
+
+                        # KEY FIX: iterate name columns FIRST, then rows — so left column
+                        # items all come before right column items (preserves S.No ordering).
+                        for nc in _hcols:
+                            sno_col = _sno_for_nc.get(nc)
+                            for row in table.rows[_hrow:]:
+                                ncells = len(row.cells)
+                                if nc >= ncells:
+                                    continue
+                                val = row.cells[nc].text.strip()
+                                # Strip embedded header prefix (e.g. "Name of Investigation Actual Name"
+                                # or "Name of Investigation\nActual Name")
+                                if val.lower().startswith("name of investigation"):
+                                    val = val[len("name of investigation"):].strip().lstrip("\n").strip()
+                                # Extract numeric price from cells that embed "Charges\n500"
                                 price_val = ""
-                                if _pcol is not None and _pcol < len(row.cells):
-                                    pv = row.cells[_pcol].text.strip()
-                                    if pv and pv.lower() not in ("price", "rate", "nan", ""):
+                                pc = _pcols.get(nc)
+                                if pc is not None and pc < ncells:
+                                    pv = row.cells[pc].text.strip()
+                                    # Handle "Charges\n500" pattern
+                                    if "\n" in pv:
+                                        pv = pv.split("\n")[-1].strip()
+                                    if pv and pv.lower() not in ("price", "rate", "charges", "nan", ""):
                                         price_val = pv
-                                # Lab type
-                                lab_type = _infer_lab_type(val)
-                                if _dcol is not None and _dcol < len(row.cells):
-                                    dv = row.cells[_dcol].text.strip()
-                                    if dv and _RAD_PAT.search(dv):
-                                        lab_type = "Radiology"
-                                _seen_w.add(val_low)
-                                _det_items.append({"name": val, "price": price_val, "lab_type": lab_type})
+                                # Extract S.No value for use as serial_no
+                                sno_val = ""
+                                if sno_col is not None and sno_col < ncells:
+                                    sno_val = row.cells[sno_col].text.strip()
+                                val_low = val.lower()
+                                if (val and len(val) >= 3
+                                        and val_low not in _SKIP_VALUES_W
+                                        and val_low not in _seen_w
+                                        and not val.replace(" ", "").isdigit()):
+                                    lab_type = _infer_lab_type(val)
+                                    if _dcol is not None and _dcol < ncells:
+                                        dv = row.cells[_dcol].text.strip()
+                                        if dv and _RAD_PAT.search(dv):
+                                            lab_type = "Radiology"
+                                    _seen_w.add(val_low)
+                                    item = {"name": val, "price": price_val, "lab_type": lab_type}
+                                    if sno_val and sno_val.isdigit():
+                                        item["serial_no"] = int(sno_val)
+                                    _det_items.append(item)
 
                 if _det_items:
                     _prog(25, f"Extracted {len(_det_items)} items from Word table (deterministic)…")
@@ -937,14 +1131,18 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
             content = _pre_extract_docx(file_path)
             _prog(14, "Identifying test names with Claude…")
             prompt  = (
-                "This is a Word document provider catalogue with a table layout.\n"
-                "The table has columns like: CODE | PARAMETER DESCRIPTIONS (or Test Name) | TYPE | SPECIMEN | PRICE | TAT\n"
-                "Extract the test/parameter names column. Also capture price (if present) and "
-                "department/section (Pathology or Radiology, if present).\n"
-                "Do NOT extract: codes, type values (ROUTINE/SPECIAL), specimen types (Serum/Blood/Urine/PUS/Fluid), or TAT values.\n"
-                "Strip section headers, introductory paragraphs, footnotes.\n\n"
+                "This is a Word document provider lab test catalogue.\n"
+                "Your task: extract EVERY test/investigation name along with its price.\n\n"
+                "Rules — independent of column names:\n"
+                "1. The TEST NAME column contains medical test names (text, 3–80 chars). "
+                "Find it by content — the header could say anything (Test, Investigation, Description, Parameter, Item, Service, etc.).\n"
+                "2. The PRICE column contains numeric values. ALWAYS extract it regardless of the header name "
+                "(Rate, MRP, Charges, Amount, Fee, Rs, Cost — any of these).\n"
+                "3. If a DEPARTMENT or SECTION column exists, classify each test as Pathology or Radiology.\n"
+                "4. Skip: row numbers, codes, type labels (Routine/Special), specimen types "
+                "(Serum/Blood/Urine/Fluid), TAT values, section headers, footnotes.\n\n"
                 f"{content[:80_000]}\n\n"
-                'Return JSON: {"tests": [{"name": "name1", "price": "450", "lab_type": "Pathology"}, ...]}'
+                'Return JSON: {"tests": [{"name": "Complete Blood Count", "price": "450", "lab_type": "Pathology"}, ...]}'
             )
             messages = [{"role": "user", "content": prompt}]
 
@@ -960,12 +1158,16 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
                     "media_type": media_map.get(ext, "image/jpeg"), "data": img_b64}},
                 {"type": "text", "text": (
                     "This is an image of a provider lab test catalogue.\n"
-                    "The image likely shows a table with columns like: Code | Test Name | Type | Specimen | Price | TAT\n"
-                    "Extract the test/investigation/parameter names. Also capture the Price column value "
-                    "and Department/Section (Pathology or Radiology) if visible.\n"
-                    "Do NOT extract: codes (alphanumeric IDs), type values (ROUTINE/SPECIAL), "
-                    "specimen types (Serum/Blood/Urine/PUS/Fluid/Swab/Sputum/Stool), or TAT values.\n"
-                    'Return JSON: {"tests": [{"name": "name1", "price": "450", "lab_type": "Pathology"}, ...]}'
+                    "Your task: extract EVERY test/investigation name along with its price.\n\n"
+                    "Rules — independent of column names:\n"
+                    "1. Find the TEST NAME column by its content (medical test names, 3–80 chars). "
+                    "The column header could say anything.\n"
+                    "2. Find the PRICE column by its content (numeric values like 450, 1200). "
+                    "ALWAYS extract it — the header might be Rate, MRP, Charges, Amount, Fee, or anything else.\n"
+                    "3. Classify each test as Pathology or Radiology if a department column is visible.\n"
+                    "4. Skip: row/serial numbers, test codes, type labels (Routine/Special), "
+                    "specimen types (Serum/Blood/Urine/Fluid/Stool/Swab), TAT values.\n"
+                    'Return JSON: {"tests": [{"name": "Complete Blood Count", "price": "450", "lab_type": "Pathology"}, ...]}'
                 )},
             ]}]
 
@@ -974,9 +1176,15 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
             content  = path.read_text(encoding="utf-8", errors="ignore")
             _prog(14, "Identifying test names with Claude…")
             prompt   = (
-                "This is a CSV provider catalogue. Extract all test names with price and department.\n\n"
+                "This is a CSV provider lab test catalogue.\n"
+                "Your task: extract EVERY test/investigation name along with its price.\n\n"
+                "Rules — independent of column names:\n"
+                "1. Find the TEST NAME column by content (medical test names, 3–80 chars). Header could say anything.\n"
+                "2. Find the PRICE column by content (numeric values). ALWAYS extract it regardless of header name.\n"
+                "3. Classify as Pathology or Radiology if a department column exists.\n"
+                "4. Skip: row numbers, codes, type labels, specimen types, TAT, section headers.\n\n"
                 f"{content[:80_000]}\n\n"
-                'Return JSON: {"tests": [{"name": "name1", "price": "450", "lab_type": "Pathology"}, ...]}'
+                'Return JSON: {"tests": [{"name": "Complete Blood Count", "price": "450", "lab_type": "Pathology"}, ...]}'
             )
             messages = [{"role": "user", "content": prompt}]
 
@@ -1056,13 +1264,14 @@ def _parse_file_with_claude(file_path: str, job_id: str | None = None) -> list[d
 # ── Semantic Recovery ──────────────────────────────────────────────────────────
 
 def _load_skill_context() -> str:
-    """Load accuracy-loop-guide.md only — the specific guide for semantic recovery."""
+    """Load accuracy-loop-guide.md for semantic recovery system prompt."""
+    refs_dir = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references"
     parts = []
-    loop_guide = PROJECT_ROOT / ".claude" / "skills" / "process-catalogue" / "references" / "accuracy-loop-guide.md"
+    loop_guide = refs_dir / "accuracy-loop-guide.md"
     if loop_guide.exists():
         parts.append(loop_guide.read_text(encoding="utf-8"))
     parts.append(
-        "\nYou are performing the semantic recovery pass (Pass 2 from accuracy-loop-guide.md).\n"
+        "\nYou are performing the semantic recovery pass (from accuracy-loop-guide.md).\n"
         "Match each unmatched provider test name to the best catalogue name from the candidates provided.\n"
         "Return ONLY valid JSON: "
         '{"matches": [{"id": "...", "catalogue_name": "exact name or null", "confidence": 0.75, "skipped": false}]}\n'
@@ -1218,8 +1427,12 @@ def _process_job(job_id: str, file_path: str):
         if not parsed_items:
             raise ValueError("No test names could be extracted.")
 
+        # Stamp sequential serial_no preserving source file order
+        for idx, item in enumerate(parsed_items):
+            item.setdefault("serial_no", idx + 1)
+
         names    = [r["name"] for r in parsed_items]
-        meta_map = {r["name"]: r for r in parsed_items}  # name → {price, lab_type}
+        meta_map = {r["name"]: r for r in parsed_items}  # name → {price, lab_type, serial_no}
 
         _progress(job_id, 30, f"Extracted {len(names)} names — running match.py…")
         results = run_match_script(names, PROJECT_ROOT, job_id, jobs)
@@ -1238,6 +1451,7 @@ def _process_job(job_id: str, file_path: str):
                 "confidence":     float(row.get("Confidence Score") or 0),
                 "price":          meta.get("price", ""),
                 "lab_type":       meta.get("lab_type", "") or _infer_lab_type(prov_name),
+                "serial_no":      meta.get("serial_no", ""),
             }
             if mt == "SKIPPED":
                 skipped.append(item)
@@ -1302,7 +1516,7 @@ def _process_job(job_id: str, file_path: str):
         jobs[job_id].update({
             "status": "done", "progress": 100, "current_step": "Done",
             "matched": matched, "unmatched": unmatched, "skipped": skipped,
-            "mappings": _rows_to_flat({"matched": matched, "unmatched": unmatched}),
+            "mappings": _rows_to_flat({"matched": matched, "unmatched": unmatched, "skipped": skipped}),
             "stats": stats,
         })
         _save_job(job_id)   # persist to disk — survives server restarts
@@ -1338,16 +1552,39 @@ async def status_stream(job_id: str):
     return StreamingResponse(_gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+# ── Download input file ────────────────────────────────────────────────────────
+@app.get("/api/download/input/{job_id}")
+async def download_input(job_id: str):
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    fp = job.get("file_path", "")
+    if not fp or not Path(fp).exists():
+        raise HTTPException(404, "Input file not found on server")
+    return FileResponse(fp, filename=Path(fp).name)
+
+
 # ── Get mappings ───────────────────────────────────────────────────────────────
 @app.get("/api/mappings/{job_id}")
 async def get_mappings(job_id: str):
     job = jobs.get(job_id)
     if not job:
         raise HTTPException(404, "Job not found")
+    # Always sync from disk if disk cache has more rows (handles stale in-memory state)
+    cache_file = CACHE_DIR / f"{job_id}.json"
+    if cache_file.exists():
+        try:
+            disk = json.loads(cache_file.read_text(encoding="utf-8"))
+            disk_mappings = disk.get("mappings", [])
+            if len(disk_mappings) > len(job.get("mappings", [])):
+                job["mappings"] = disk_mappings
+                job["stats"]    = disk.get("stats", job.get("stats", {}))
+        except Exception:
+            pass
     return {
-        "mappings": job["mappings"],
-        "stats":    job["stats"],
-        "filename": job["filename"],
+        "mappings": job.get("mappings", []),
+        "stats":    job.get("stats", {}),
+        "filename": job.get("filename", ""),
     }
 
 
@@ -1487,7 +1724,8 @@ async def apply_action(body: ApplyBody):
             continue
         if field == "catalogue_name":
             mappings[i]["standard_name"]  = value
-            mappings[i]["status"]         = "matched" if value else "unmatched"
+            if mappings[i].get("status") != "skipped":
+                mappings[i]["status"] = "matched" if value else "unmatched"
         elif field == "status":
             mappings[i]["status"] = value
         elif field == "price":
@@ -1515,6 +1753,7 @@ class UpdateBody(BaseModel):
     standard_name: str | None = None
     price: str | None = None
     lab_type: str | None = None
+    keep_status: bool = False
 
 
 @app.patch("/api/mapping")
@@ -1525,7 +1764,8 @@ async def update_mapping(body: UpdateBody):
         if row["id"] == body.row_id:
             if body.standard_name is not None:
                 row["standard_name"] = body.standard_name
-                row["status"]        = "matched" if body.standard_name.strip() else "unmatched"
+                if not body.keep_status and row.get("status") != "skipped":
+                    row["status"] = "matched" if body.standard_name.strip() else "unmatched"
                 row["highlight"]     = None
             if body.price is not None:
                 row["price"] = body.price
@@ -1854,7 +2094,7 @@ async def export(body: ExportBody):
             "prescription_required": merged.get("prescription_required", ""),
             "precautions":           merged.get("precautions", ""),
             "description":           merged.get("description", ""),
-            "provider_item_name":    merged.get("provider_item_name", ""),
+            "provider_item_name":    re.sub(r'[^a-z0-9]+', '-', cat_name.strip().lower()).strip('-') if cat_name.strip() else '',
         }
 
     matched_rows   = [_build_row(r, "MATCHED")

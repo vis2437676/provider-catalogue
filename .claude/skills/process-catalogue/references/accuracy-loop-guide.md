@@ -24,38 +24,7 @@ Run these four checks **in order** for each UNMATCHED item. Stop at the first ch
 | **Pre-flight 3** — Substring search | Exact substring match on acronyms/combined names | RGU, MCU, HSG, NCV, TIFFA, etc. |
 | **Pre-flight 4** — WRatio | Catches abbreviated strings that token_sort_ratio misses | HOLTER 24 H, short codes vs long names |
 
-Only after all four pre-flights fail → run the full fuzzy + docx loop below.
-
----
-
-## Pass 1 — input_file.docx (3 Rounds)
-
-`refrences/input_file.docx` is the full provider test name list. It contains more names than `master_file.xlsx` and serves as a broader reference for semantic lookup.
-
-### Process per UNMATCHED row:
-
-1. Read the unmatched provider test name
-2. Search `input_file.docx` for the closest matching test name semantically
-3. Accept the match only if:
-   - Similarity is ≥ 75% (assess via token overlap, abbreviation expansion, or synonym recognition)
-   - The matched entry is in the same test category (e.g., haematology, biochemistry)
-4. If accepted: look up the matched name in `master_file.xlsx.db` to get the Catalogue Test Name; update `Match Type` to `fuzzy-secondary` and record confidence
-5. If not accepted: leave as `UNMATCHED`
-
-### Iteration Rules
-
-- Run up to **3 rounds** maximum
-- After each round, check if any new matches were found
-- If a round yields zero new matches → stop immediately, do not run further rounds
-- **Floor rule**: never accept any match below 65% confidence — mark as UNMATCHED instead
-
-### Threshold Ladder
-
-| Round | Threshold | Source |
-|-------|-----------|--------|
-| 1 | 75% | `input_file.docx` |
-| 2 | 70% | `input_file.docx` (only if round 1 found new matches) |
-| 3 | 65% | `input_file.docx` (only if round 2 found new matches) |
+Only after all four pre-flights fail → run the semantic pass below.
 
 ---
 
@@ -83,7 +52,7 @@ Only after all four pre-flights fail → run the full fuzzy + docx loop below.
 
 ## Radiology Clinical Validity Rules (applies to ALL imaging passes)
 
-Beyond modality, imaging matches must also be clinically coherent. Apply these rules during Pass 1, Pass 2, and any manual semantic recovery for radiology tests:
+Beyond modality, imaging matches must also be clinically coherent. Apply these rules during the semantic pass and any manual semantic recovery for radiology tests:
 
 ### Body Part Consistency
 If the provider names a specific body part, the catalogue entry must name the **same** body part (or no body part — generic entries are acceptable fallbacks).
@@ -134,9 +103,9 @@ Example: `CT SCAN HEAD` with no qualifier → prefer `CT Scan Head Plain` over `
 
 ---
 
-## Pass 2 — Semantic Mapping (LLM + Catalogue-name Search)
+## Semantic Mapping Pass (LLM + Catalogue-name Search)
 
-After the docx rounds complete, run a semantic mapping pass on any still-UNMATCHED rows.
+After pre-flights complete, run a semantic mapping pass on any still-UNMATCHED rows.
 
 This pass handles:
 - **Typos and misspellings** (e.g., `TYNCONAMETRY` → Tympanometry, `T ZUNCK` → Tzanck Smear, `FLUID EXAM BIOCHEMISTRY AND PSYCHOLOGICAL` → Body Fluid Analysis — "PSYCHOLOGICAL" is a mis-transcription of "PHYSIOLOGICAL"; `match.py` now auto-corrects this before matching)
@@ -151,7 +120,7 @@ This pass handles:
 ### How to run the semantic pass:
 
 1. For each UNMATCHED row, apply LLM medical knowledge to determine the likely standard test name
-2. Search `master_file.xlsx.db` using **two sources**:
+2. Search `Master.csv.db` using **two sources**:
    - Provider names (`provider_item_name` column) — fuzzy match with `token_sort_ratio`
    - **Catalogue names** (`package_name` column) directly — fuzzy match with `token_sort_ratio`
    - Accept the best score across both sources
@@ -230,7 +199,7 @@ Many providers use generic billing tiers for X-rays rather than naming the speci
 **WRatio tie-breaking rule:** When two catalogue names score within 3 points of each other on WRatio (e.g. `TRBC` scores 77% for both "Total RBC" and "RBC Folate"), do NOT accept automatically. Instead:
 1. Check the `KNOWN_ABBREVIATIONS` dict in `match.py` — the tie may already be pre-resolved there.
 2. Apply medical knowledge: expand the abbreviation letter-by-letter and pick the name whose words correspond to those letters (`TRBC` → T(otal) R(BC) → "Total RBC").
-3. Verify the chosen catalogue name exists in `master_file.xlsx.db` before accepting.
+3. Verify the chosen catalogue name exists in `Master.csv.db` before accepting.
 4. If still ambiguous, mark UNMATCHED.
 
 **Acronym expansion for ABPA-type panels:** When a provider test name is a medical acronym followed by "PANEL" and fuzzy matching returns unrelated panels at ≥ 86% (because the word "PANEL" dominates the score), use substring search on the acronym expansion instead:
